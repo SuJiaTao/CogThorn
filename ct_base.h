@@ -17,7 +17,6 @@
 
 #include <Windows.h>
 
-
 //////////////////////////////////////////////////////////////////////////////
 ///
 ///								MEMORY MANAGEMENT
@@ -104,7 +103,7 @@ CTCALL	BOOL		CTLockLeave(PCTLock lock);
 typedef struct CTDynListNode {
 	PBYTE	elements;
 	UINT32	elementUseCount;
-	PUINT64	useField;
+	PBYTE	useField;
 	PVOID	nextNode;
 } CTDynListNode, *PCTDynListNode;
 

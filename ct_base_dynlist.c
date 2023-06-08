@@ -11,19 +11,6 @@
 #include <stdio.h>
 #include <intrin.h>
 
-typedef struct __CTFieldPos {
-	UINT64 index;
-	UINT64 bitOffset;
-} __CTFieldPos, * P__CTFieldPos;
-
-__CTFieldPos __HCTIndexToFieldPos(UINT32 index) {
-	__CTFieldPos rfp = {
-		.index		= index >> 6,
-		.bitOffset	= index & 0b111111
-	};
-	return rfp;
-}
-
 void __HCTDynListAddNode(PCTDynList pList) {
 	EnterCriticalSection(&pList->lock);
 
@@ -34,9 +21,7 @@ void __HCTDynListAddNode(PCTDynList pList) {
 	PCTDynListNode node = CTAlloc(sizeof(*node));
 
 	node->elements = CTAlloc(pList->elementSizeBytes * pList->elementsPerNode);
-
-	const SIZE_T FIELD_ELEMENT_COUNT = ((pList->elementsPerNode >> 6) + 1);
-	node->useField = CTAlloc(FIELD_ELEMENT_COUNT * sizeof(*node->useField));
+	node->useField = CTAlloc(pList->elementsPerNode * sizeof(*node->useField));
 
 	if (pList->nodeLast == NULL) {
 		pList->nodeFirst	= node;
@@ -190,8 +175,18 @@ CTCALL	PVOID		CTDynListAdd(PCTDynList list) {
 	EnterCriticalSection(&list->lock);
 
 	/// SUMMARY:
-	/// checks if all nodes are used up, if so, then creates a new node
-	/// searches for free element spot, increments element count, and returns it
+	/// if (all elements are used)
+	///		add new node to list
+	/// while (next node exists):
+	///		loop every element in node:
+	///			get index use flag
+	///			if (index is used)
+	///				skip
+	///			set use flag to true, increment element use count
+	///			get ptr of node element
+	///			return ptr
+	/// <should never reach here>
+	/// raise error
 	
 	if (list->elementsUsedCount == list->elementsTotalCount) {
 		__HCTDynListAddNode(list);
@@ -203,29 +198,20 @@ CTCALL	PVOID		CTDynListAdd(PCTDynList list) {
 	while (node != NULL) {
 		
 		for (UINT32 nodeIndex = 0; nodeIndex < list->elementsPerNode; nodeIndex++) {
-
-			/// SUMMARY:
-			/// converts nodeIndex into a bitfield index with a bit offset and then
-			/// tests the bitfield. if bit is FALSE, then free index is found.
-			/// increment node use and set bit to TRUE
-			/// set retPtr to buffer ptr and goto completion stage
 			
-			__CTFieldPos fieldPos =__HCTIndexToFieldPos(nodeIndex);
+			PBYTE fieldState = node->useField + nodeIndex;
 
-			BOOL fieldState = _bittest64(node->useField + fieldPos.index, fieldPos.bitOffset);
+			if (*fieldState == TRUE) continue;
 
-			if (fieldState == FALSE) {
+			*fieldState				= TRUE;
+			node->elementUseCount	+= 1;
+			list->elementsUsedCount += 1;
 
-				_bittestandset64(node->useField + fieldPos.index, fieldPos.bitOffset);
-				node->elementUseCount	+= 1;
-				list->elementsUsedCount += 1;
+			retPtr = node->elements + (nodeIndex * list->elementSizeBytes);
+			LeaveCriticalSection(&list->lock);
 
-				retPtr = node->elements + (nodeIndex * list->elementSizeBytes);
+			return retPtr;
 
-				LeaveCriticalSection(&list->lock);
-				return retPtr;
-
-			}
 		}
 		
 		node = node->nextNode;
@@ -273,16 +259,15 @@ CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element) {
 			element >= node->elements) {
 
 			SIZE_T elementIndex = ((PBYTE)element - node->elements) / list->elementSizeBytes;
+			PBYTE  fieldState	= node->useField + elementIndex;
 
-			__CTFieldPos fieldPos = __HCTIndexToFieldPos(elementIndex);
-
-			if (_bittest64(node->useField + fieldPos.index, fieldPos.bitOffset) == FALSE) {
+			if (*fieldState == FALSE) {
 				LeaveCriticalSection(&list->lock);
 				CTErrorSetFunction("CTDynListRemove failed: element is already removed!");
 				return FALSE;
 			}
 			
-			_bittestandreset64(node->useField + fieldPos.index, fieldPos.bitOffset);
+			*fieldState				 = FALSE;
 			node->elementUseCount	-= 1;
 			list->elementsUsedCount -= 1;
 
@@ -357,11 +342,7 @@ CTCALL	PVOID		CTIteratorIterate(PCTIterator iterator) {
 
 		if (iterator->currentNodeIndex < iterator->parent->elementsPerNode) {
 
-			__CTFieldPos fieldPos = __HCTIndexToFieldPos(iterator->currentNodeIndex);
-			BOOL fieldState = _bittest64(
-				iterator->currentNode->useField + fieldPos.index,
-				fieldPos.bitOffset
-			);
+			BOOL fieldState = iterator->currentNode->useField[iterator->currentNodeIndex];
 
 			if (fieldState == FALSE) {
 
