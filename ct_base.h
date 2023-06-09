@@ -103,6 +103,7 @@ CTCALL	BOOL		CTLockLeave(PCTLock lock);
 typedef struct CTDynListNode {
 	PBYTE	elements;
 	UINT32	elementUseCount;
+	UINT32	seekHead;
 	PBYTE	useField;
 	PVOID	nextNode;
 } CTDynListNode, *PCTDynListNode;
@@ -131,6 +132,7 @@ CTCALL	BOOL		CTDynListLock(PCTDynList list);
 CTCALL	BOOL		CTDynListUnlock(PCTDynList list);
 CTCALL	PVOID		CTDynListAdd(PCTDynList list);
 CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element);
+CTCALL	BOOL		CTDynListClean(PCTDynList list);
 CTCALL	PCTIterator	CTIteratorCreate(PCTDynList list);
 CTCALL	BOOL		CTIteratorDestroy(PCTIterator iterator);
 CTCALL	PVOID		CTIteratorIterate(PCTIterator iterator);

@@ -47,7 +47,7 @@ void __HCTDynListRemoveNode(PCTDynList list, PCTDynListNode prevNode, PCTDynList
 	/// 
 	/// free(nodeToRemove)
 	
-
+	EnterCriticalSection(&list->lock);
 
 	if (nodeToRemove == list->nodeLast) {
 		list->nodeLast = prevNode;
@@ -62,6 +62,8 @@ void __HCTDynListRemoveNode(PCTDynList list, PCTDynListNode prevNode, PCTDynList
 
 	list->nodeCount				-= 1;
 	list->elementsTotalCount	-= list->elementsPerNode;
+
+	LeaveCriticalSection(&list->lock);
 }
 
 CTCALL	PCTDynList	CTDynListCreate(SIZE_T elemSize, UINT32 elemsPerNode) {
@@ -118,6 +120,8 @@ CTCALL	BOOL		CTDynListClear(PCTDynList list) {
 		return FALSE;
 	}
 
+	EnterCriticalSection(&list->lock);
+
 	// clear all nodes
 	PCTDynListNode node = list->nodeFirst;
 
@@ -140,6 +144,8 @@ CTCALL	BOOL		CTDynListClear(PCTDynList list) {
 	
 	// reset first node
 	__HCTDynListAddNode(list);
+
+	LeaveCriticalSection(&list->lock);
 
 	return TRUE;
 }
@@ -197,7 +203,7 @@ CTCALL	PVOID		CTDynListAdd(PCTDynList list) {
 	PCTDynListNode node = list->nodeFirst;
 	while (node != NULL) {
 		
-		for (UINT32 nodeIndex = 0; nodeIndex < list->elementsPerNode; nodeIndex++) {
+		for (UINT32 nodeIndex = node->seekHead; nodeIndex < list->elementsPerNode; nodeIndex++) {
 			
 			PBYTE fieldState = node->useField + nodeIndex;
 
@@ -206,6 +212,7 @@ CTCALL	PVOID		CTDynListAdd(PCTDynList list) {
 			*fieldState				= TRUE;
 			node->elementUseCount	+= 1;
 			list->elementsUsedCount += 1;
+			node->seekHead			= nodeIndex;
 
 			retPtr = node->elements + (nodeIndex * list->elementSizeBytes);
 			LeaveCriticalSection(&list->lock);
@@ -242,9 +249,6 @@ CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element) {
 	///			else
 	///				clear use flag and decrement element count and zero memory
 	/// 
-	///				if (node has no more elements and is NOT the first node)
-	///					delete node, and update last node if applicable
-	/// 
 	///				return
 	///		else
 	///			set node to next node
@@ -271,19 +275,13 @@ CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element) {
 			node->elementUseCount	-= 1;
 			list->elementsUsedCount -= 1;
 
+			node->seekHead	= min(node->seekHead, elementIndex);
+
 			__stosb(
 				node->elements + (elementIndex * list->elementSizeBytes),
 				0,
 				list->elementSizeBytes
 			);
-
-			if (prevNode != NULL && node->elementUseCount == 0) {
-				__HCTDynListRemoveNode(
-					list,
-					prevNode,
-					node
-				);
-			}
 
 			LeaveCriticalSection(&list->lock);
 			return TRUE;
@@ -296,6 +294,67 @@ CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element) {
 	LeaveCriticalSection(&list->lock);
 	CTErrorSetFunction("CTDynListRemove failed: element could not be found in list");
 	return FALSE;
+}
+
+CTCALL	BOOL		CTDynListClean(PCTDynList list) {
+	if (list == NULL) {
+		CTErrorSetBadObject("CTDynListClean failed: list was NULL");
+		return NULL;
+	}
+
+	EnterCriticalSection(&list->lock);
+
+	/// SUMMARY:
+	/// cache total amount of nodes
+	/// repeat cahced amt of node times:
+	///		get current amt of nodes
+	///		loop all nodes:
+	///			if (node is NOT first node && node has no elements)
+	///				remove node
+	///				break
+	///			else
+	///				increment good node counter
+	///		if (current amt of nodes == good node counter)
+	///			break
+	
+	UINT32 startNodeCount	= list->nodeCount;
+
+	for (UINT32 i = 0; i < startNodeCount; i++) {
+
+		PCTDynListNode node		= list->nodeFirst;
+		PCTDynListNode prevNode = NULL;
+
+		UINT32 currentNodeCount = list->nodeCount;
+		UINT32 usedNodeCounter	= 0;
+
+		while (node != NULL) {
+			if (node != list->nodeFirst && node->elementUseCount == 0) {
+
+				__HCTDynListRemoveNode(
+					list,
+					prevNode,
+					node
+				);
+				break;
+
+			}
+			else
+			{
+				usedNodeCounter++;
+			}
+
+			prevNode = node;
+			node	 = node->nextNode;
+		}
+
+		//if (usedNodeCounter == currentNodeCount)
+		//	break;
+
+	}
+
+	LeaveCriticalSection(&list->lock);
+	
+	return TRUE;
 }
 
 CTCALL	PCTIterator	CTIteratorCreate(PCTDynList list) {
