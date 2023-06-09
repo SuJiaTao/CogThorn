@@ -297,6 +297,7 @@ CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element) {
 }
 
 CTCALL	BOOL		CTDynListClean(PCTDynList list) {
+
 	if (list == NULL) {
 		CTErrorSetBadObject("CTDynListClean failed: list was NULL");
 		return NULL;
@@ -368,6 +369,8 @@ CTCALL	PCTIterator	CTIteratorCreate(PCTDynList list) {
 	iter->currentNodeIndex	= 0;
 	iter->parent			= list;
 
+	CTDynListLock(list);
+
 	return iter;
 }
 
@@ -377,12 +380,18 @@ CTCALL	BOOL		CTIteratorDestroy(PCTIterator iterator) {
 		return FALSE;
 	}
 
+	CTDynListUnlock(iterator->parent);
 	CTFree(iterator);
 
 	return TRUE;
 }
 
 CTCALL	PVOID		CTIteratorIterate(PCTIterator iterator) {
+
+	if (iterator == NULL) {
+		CTErrorSetBadObject("CTIteratorIterate failed: iterator was NULL");
+		return FALSE;
+	}
 
 	/// SUMMARY:
 	/// while scanned node is NOT NULL:
