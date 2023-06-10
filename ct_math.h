@@ -18,13 +18,13 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #define CT_RADIANS_TO_DEGREES	57.2958f
-#define CT_DEGREES_TO_RADIANS	0.01745f
+#define CT_DEGREES_TO_RADIANS	0.0174533f
 
 typedef struct CTVect {
 	FLOAT x, y;
 } CTVect, PCTVect;
 
-CTCALL	CTVect	CTMakeVect(FLOAT x, FLOAT y);
+CTCALL	CTVect	CTVectCreate(FLOAT x, FLOAT y);
 CTCALL	CTVect	CTVectAdd(CTVect v1, CTVect v2);
 CTCALL	CTVect	CTVectSubtract(CTVect v1, CTVect v2);
 CTCALL	CTVect	CTVectMultiply(CTVect vect, FLOAT scalar);

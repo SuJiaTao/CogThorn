@@ -10,7 +10,7 @@
 
 #include <math.h>
 
-CTCALL	CTVect	CTMakeVect(FLOAT x, FLOAT y) {
+CTCALL	CTVect	CTVectCreate(FLOAT x, FLOAT y) {
 	CTVect rv = {
 		.x = x,
 		.y = y
@@ -21,7 +21,7 @@ CTCALL	CTVect	CTMakeVect(FLOAT x, FLOAT y) {
 CTCALL	CTVect	CTVectAdd(CTVect v1, CTVect v2) {
 	CTVect rv = {
 		.x = v1.x + v2.x,
-		.y = v2.y + v2.y
+		.y = v1.y + v2.y
 	};
 	return rv;
 }
@@ -29,7 +29,7 @@ CTCALL	CTVect	CTVectAdd(CTVect v1, CTVect v2) {
 CTCALL	CTVect	CTVectSubtract(CTVect v1, CTVect v2) {
 	CTVect rv = {
 		.x = v1.x - v2.x,
-		.y = v2.y - v2.y
+		.y = v1.y - v2.y
 	};
 	return rv;
 }
@@ -47,7 +47,12 @@ CTCALL	FLOAT	CTVectDot(CTVect v1, CTVect v2) {
 }
 
 CTCALL	CTVect	CTVectNormalize(CTVect vect) {
-
+	FLOAT invMag = 1.0f / CTVectMagnitude(vect);
+	CTVect rv = {
+		.x = vect.x * invMag,
+		.y = vect.y * invMag
+	};
+	return rv;
 }
 
 CTCALL	FLOAT	CTVectMagnitude(CTVect vect) {
