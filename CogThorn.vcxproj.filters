@@ -50,5 +50,11 @@
     <ClCompile Include="ct_math_vector.c">
       <Filter>Source Files\Math</Filter>
     </ClCompile>
+    <ClCompile Include="ct_math_matrix.c">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_math_random.c">
+      <Filter>Source Files\Math</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -29,6 +29,8 @@
     <ClCompile Include="ct_base_lock.c" />
     <ClCompile Include="ct_base_memory.c" />
     <ClCompile Include="ct_dllmain.c" />
+    <ClCompile Include="ct_math_matrix.c" />
+    <ClCompile Include="ct_math_random.c" />
     <ClCompile Include="ct_math_vector.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

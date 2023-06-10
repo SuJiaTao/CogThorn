@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <intrin.h>
 
-void __HCTDynListAddNode(PCTDynList pList) {
+static void __HCTDynListAddNode(PCTDynList pList) {
 	EnterCriticalSection(&pList->lock);
 
 	/// SUMMARY:
@@ -37,7 +37,7 @@ void __HCTDynListAddNode(PCTDynList pList) {
 	LeaveCriticalSection(&pList->lock);
 }
 
-void __HCTDynListRemoveNode(PCTDynList list, PCTDynListNode prevNode, PCTDynListNode nodeToRemove) {
+static void __HCTDynListRemoveNode(PCTDynList list, PCTDynListNode prevNode, PCTDynListNode nodeToRemove) {
 
 	/// SUMMARY:
 	/// if (node to remove is last node)
