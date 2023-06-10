@@ -16,9 +16,15 @@
     <Filter Include="Source Files\Base">
       <UniqueIdentifier>{306b0269-3dbd-453d-b537-2e062925b63b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Math">
+      <UniqueIdentifier>{b0aeb3f8-d9b0-4e04-916c-beb676244c43}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ct_math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -40,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="ct_base_lock.c">
       <Filter>Source Files\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_math_vector.c">
+      <Filter>Source Files\Math</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

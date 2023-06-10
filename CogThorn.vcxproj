@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h" />
+    <ClInclude Include="ct_math.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ct_base_dynlist.c" />
@@ -28,6 +29,7 @@
     <ClCompile Include="ct_base_lock.c" />
     <ClCompile Include="ct_base_memory.c" />
     <ClCompile Include="ct_dllmain.c" />
+    <ClCompile Include="ct_math_vector.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
