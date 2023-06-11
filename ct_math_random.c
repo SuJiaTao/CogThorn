@@ -22,7 +22,9 @@ CTCALL	UINT32		CTRandomInt(UINT32 seed) {
 	seed ^= seed << 13;
 	seed ^= seed >> 17;
 	seed ^= seed << 5;
-	return seed;
+
+	// constrain to [0, 2^16 - 1]
+	return seed & 0xFFFF;
 }
 
 CTCALL	FLOAT		CTRandomFloat(FLOAT seed) {
