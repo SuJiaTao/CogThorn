@@ -7,6 +7,8 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include "ct_gfx.h"
+#include <intrin.h>
+#include <float.h>
 
 CTCALL	PCTFrameBuffer	CTFrameBufferCreate(UINT32 width, UINT32 height) {
 	if (width == 0 || height == 0) {
@@ -29,6 +31,8 @@ CTCALL	PCTFrameBuffer	CTFrameBufferCreate(UINT32 width, UINT32 height) {
 		return NULL;
 	}
 	rfb->lock	= CTLockCreate();
+
+	CTFrameBufferClear(rfb, TRUE, TRUE);
 
 	return rfb;
 }
@@ -82,7 +86,7 @@ CTCALL	BOOL			CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth)
 	UINT32 index = pt.x + (pt.y * fb->width);
 
 	CTLockEnter(&fb->lock);
-	BOOL depthTest = fb->depth[index] <= depth;
+	BOOL depthTest = fb->depth[index] >= depth;
 	CTLockLeave(&fb->lock);
 
 	return depthTest;
@@ -127,5 +131,25 @@ CTCALL	BOOL			CTFrameBufferUnlock(PCTFrameBuffer fb) {
 		return FALSE;
 	}
 	CTLockLeave(fb->lock);
+	return TRUE;
+}
+
+CTCALL	BOOL			CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth) {
+	if (fb == NULL) {
+		CTErrorSetBadObject("CTFrameBufferClear failed: fb was NULL");
+		return FALSE;
+	}
+
+	CTLockEnter(fb);
+
+	const FLOAT		CLEAR_DEPTH_VALUE	= FLT_MAX;
+	const UINT32	FB_ELEMENT_COUNT	= fb->width * fb->height;
+	if (color == TRUE)
+		__stosd(fb->color, 0, FB_ELEMENT_COUNT);
+	if (depth == TRUE)
+		__stosd(fb->depth, *(PDWORD)&CLEAR_DEPTH_VALUE, FB_ELEMENT_COUNT);
+
+	CTLockLeave(fb);
+
 	return TRUE;
 }

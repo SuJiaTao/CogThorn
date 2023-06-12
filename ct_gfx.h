@@ -53,6 +53,7 @@ CTCALL	BOOL			CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth)
 CTCALL	BOOL			CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth);
 CTCALL	BOOL			CTFrameBufferLock(PCTFrameBuffer fb);
 CTCALL	BOOL			CTFrameBufferUnlock(PCTFrameBuffer fb);
+CTCALL	BOOL			CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
