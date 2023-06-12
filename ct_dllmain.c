@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include "ct_base.h"
+#include "ct_gfx.h"
 
 BOOL WINAPI DllMain(
     HINSTANCE hinstDLL,
@@ -17,6 +18,8 @@ BOOL WINAPI DllMain(
     {
     case DLL_PROCESS_ATTACH:
 
+        /// INITIALIZE BASE MODULE
+
         __ctbase = LocalAlloc(0, sizeof(*__ctbase));
         if (__ctbase == NULL) return FALSE;
 
@@ -26,6 +29,15 @@ BOOL WINAPI DllMain(
         __ctbase->errorCallbackList = NULL;
         InitializeCriticalSection(&__ctbase->errorLock);
 
+        /// INITIALIZE GFX MODULE
+
+        __ctgfx = LocalAlloc(0, sizeof(*__ctgfx));
+        if (__ctgfx == NULL) return FALSE;
+
+        ZeroMemory(__ctbase, sizeof(*__ctgfx));
+
+        __ctgfx->heap = HeapCreate(0, 0, 0);
+
         break;
 
     case DLL_THREAD_ATTACH:
@@ -33,6 +45,13 @@ BOOL WINAPI DllMain(
         break;
 
     case DLL_PROCESS_DETACH:
+
+        /// CLEANUP GFX MODULE
+
+        HeapDestroy(__ctgfx->heap);
+        LocalFree(__ctgfx);
+
+        /// CLEANUP BASE MODULE
 
         EnterCriticalSection(&__ctbase->errorLock);
 

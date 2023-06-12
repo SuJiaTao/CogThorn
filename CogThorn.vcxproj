@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h" />
+    <ClInclude Include="ct_gfx.h" />
     <ClInclude Include="ct_math.h" />
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +30,8 @@
     <ClCompile Include="ct_base_lock.c" />
     <ClCompile Include="ct_base_memory.c" />
     <ClCompile Include="ct_dllmain.c" />
+    <ClCompile Include="ct_gfx_framebuffer.c" />
+    <ClCompile Include="ct_gfx_point.c" />
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />
     <ClCompile Include="ct_math_vector.c" />

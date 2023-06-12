@@ -19,12 +19,18 @@
     <Filter Include="Source Files\Math">
       <UniqueIdentifier>{b0aeb3f8-d9b0-4e04-916c-beb676244c43}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Graphics">
+      <UniqueIdentifier>{4b43df9d-0728-44ea-9787-5d0d7e2c681a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ct_math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ct_gfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -55,6 +61,12 @@
     </ClCompile>
     <ClCompile Include="ct_math_random.c">
       <Filter>Source Files\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_gfx_point.c">
+      <Filter>Source Files\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_gfx_framebuffer.c">
+      <Filter>Source Files\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
