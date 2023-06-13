@@ -10,7 +10,7 @@
 #include <intrin.h>
 #include <float.h>
 
-CTCALL	PCTFrameBuffer	CTFrameBufferCreate(UINT32 width, UINT32 height) {
+CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height) {
 	if (width == 0 || height == 0) {
 		CTErrorSetParamValue("CTFrameBufferCreate failed: width/height was invalid");
 		return NULL;
@@ -37,7 +37,7 @@ CTCALL	PCTFrameBuffer	CTFrameBufferCreate(UINT32 width, UINT32 height) {
 	return rfb;
 }
 
-CTCALL	BOOL			CTFrameBufferDestroy(PCTFrameBuffer fb) {
+CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer fb) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferDestroy failed: fb was NULL");
 		return FALSE;
@@ -52,7 +52,7 @@ CTCALL	BOOL			CTFrameBufferDestroy(PCTFrameBuffer fb) {
 	return TRUE;
 }
 
-CTCALL	BOOL			CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth) {
+CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferSet failed: fb was NULL");
 		return FALSE;
@@ -73,7 +73,7 @@ CTCALL	BOOL			CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT
 	return TRUE;
 }
 
-CTCALL	BOOL			CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
+CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferDepthTest failed: fb was NULL");
 		return FALSE;
@@ -92,7 +92,7 @@ CTCALL	BOOL			CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth)
 	return depthTest;
 }
 
-CTCALL	BOOL			CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth) {
+CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferGet failed: fb was NULL");
 		return FALSE;
@@ -116,7 +116,7 @@ CTCALL	BOOL			CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFL
 	return TRUE;
 }
 
-CTCALL	BOOL			CTFrameBufferLock(PCTFrameBuffer fb) {
+CTCALL	BOOL	CTFrameBufferLock(PCTFrameBuffer fb) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferLock failed: fb was NULL");
 		return FALSE;
@@ -125,7 +125,7 @@ CTCALL	BOOL			CTFrameBufferLock(PCTFrameBuffer fb) {
 	return TRUE;
 }
 
-CTCALL	BOOL			CTFrameBufferUnlock(PCTFrameBuffer fb) {
+CTCALL	BOOL	CTFrameBufferUnlock(PCTFrameBuffer fb) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferUnlock failed: fb was NULL");
 		return FALSE;
@@ -134,7 +134,7 @@ CTCALL	BOOL			CTFrameBufferUnlock(PCTFrameBuffer fb) {
 	return TRUE;
 }
 
-CTCALL	BOOL			CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth) {
+CTCALL	BOOL	CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferClear failed: fb was NULL");
 		return FALSE;

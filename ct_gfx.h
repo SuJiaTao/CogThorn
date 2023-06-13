@@ -44,16 +44,73 @@ typedef struct CTFrameBuffer {
 	UINT32		height;
 	PCTColor	color;
 	PFLOAT		depth;
-} CTFrameBuffer, *PCTFrameBuffer;
+} CTFrameBuffer, *PCTFrameBuffer, CTFB, *PCTFB;
 
-CTCALL	PCTFrameBuffer	CTFrameBufferCreate(UINT32 width, UINT32 height);
-CTCALL	BOOL			CTFrameBufferDestroy(PCTFrameBuffer fb);
-CTCALL	BOOL			CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth);
-CTCALL	BOOL			CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth);
-CTCALL	BOOL			CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth);
-CTCALL	BOOL			CTFrameBufferLock(PCTFrameBuffer fb);
-CTCALL	BOOL			CTFrameBufferUnlock(PCTFrameBuffer fb);
-CTCALL	BOOL			CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth);
+CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height);
+CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer fb);
+CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth);
+CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth);
+CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth);
+CTCALL	BOOL	CTFrameBufferLock(PCTFrameBuffer fb);
+CTCALL	BOOL	CTFrameBufferUnlock(PCTFrameBuffer fb);
+CTCALL	BOOL	CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth);
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								MESH
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+typedef struct CTPrimitive {
+	CTVect	vertex;
+	CTVect	UV;
+} CTPrimitive, *PCTPrimitive;
+
+typedef struct CTMesh {
+	UINT32			primCount;
+	PCTPrimitive	primList;
+} CTMesh, *PCTMesh;
+
+CTCALL	PCTMesh		CTMeshCreate(PFLOAT verts, PFLOAT uvs, UINT32 primCount);
+CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh);
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								SHADERS
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+typedef struct CTPixel {
+	PCTFB	frameBuffer;
+	CTPoint	screenCoord;
+	CTColor color;
+	FLOAT	depth;
+} PCTPixle, *PCTPixel;
+
+typedef void (*PCTSPRIMITIVE)(PCTPrimitive prim, PVOID userInput);
+typedef void (*PCTSPIXEL	)(PCTPixel pxl, PVOID userInput);
+
+typedef struct CTShader {
+	PVOID			userInputPtr;
+	SIZE_T			userInputSizeBytes;
+	PCTSPRIMITIVE	primitiveShader;
+	PCTSPIXEL		pixelShader;
+} CTShader, *PCTShader;
+
+CTCALL	PCTShader	CTShaderCreate(void);
+CTCALL	BOOL		CTShaderSet(PCTSPRIMITIVE sPrim, PCTSPIXEL sPix);
+CTCALL	BOOL		CTShaderDestroy(PCTShader shader);
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								DRAWING
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+#define CT_DRAW_METHOD_POINTS	1
+#define CT_DRAW_METHOD_LINES	2
+#define CT_DRAW_METHOD_FILL		3
+CTCALL	BOOL		CTDraw(UINT32 drawMethod, PCTFB frameBuffer, PCTMesh mesh, PCTShader shader);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
