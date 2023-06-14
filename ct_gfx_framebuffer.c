@@ -16,20 +16,12 @@ CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height) {
 		return NULL;
 	}
 
-	PCTFrameBuffer rfb = HeapAlloc(__ctgfx->heap, 0, sizeof(*rfb));
-	if (rfb == NULL) {
-		CTErrorSetParamValue("CTFrameBufferCreate failed: heap error");
-		return NULL;
-	}
+	PCTFrameBuffer rfb = CTGFXAlloc(sizeof(*rfb));
 
 	rfb->width	= width;
 	rfb->height	= height;
-	rfb->color	= HeapAlloc(__ctgfx->heap, 0, sizeof(*rfb->color) * width * height);
-	rfb->depth	= HeapAlloc(__ctgfx->heap, 0, sizeof(*rfb->depth) * width * height);
-	if (rfb->color == NULL || rfb->depth == NULL) {
-		CTErrorSetParamValue("CTFrameBufferCreate failed: heap error");
-		return NULL;
-	}
+	rfb->color	= CTGFXAlloc(sizeof(*rfb->color) * width * height);
+	rfb->depth	= CTGFXAlloc(sizeof(*rfb->depth) * width * height);
 	rfb->lock	= CTLockCreate();
 
 	CTFrameBufferClear(rfb, TRUE, TRUE);
@@ -44,10 +36,10 @@ CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer fb) {
 	}
 
 	CTLockEnter(fb->lock);
-	HeapFree(__ctgfx->heap, 0, fb->color);
-	HeapFree(__ctgfx->heap, 0, fb->depth);
+	CTGFXFree(fb->color);
+	CTGFXFree(fb->depth);
 	CTLockDestroy(fb->lock);
-	HeapFree(__ctgfx->heap, 0, fb);
+	CTGFXFree(fb);
 
 	return TRUE;
 }

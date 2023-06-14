@@ -14,6 +14,15 @@
 
 //////////////////////////////////////////////////////////////////////////////
 ///
+///								MEMORY
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+CTCALL	PVOID		CTGFXAlloc(SIZE_T size);
+CTCALL	BOOL		CTGFXFree(PVOID block);
+
+//////////////////////////////////////////////////////////////////////////////
+///
 ///								POINT
 /// 
 //////////////////////////////////////////////////////////////////////////////
@@ -76,29 +85,25 @@ CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
-///								SHADERS
+///								SHADER
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTPixel {
-	PCTFB	frameBuffer;
-	CTPoint	screenCoord;
 	CTColor color;
 	FLOAT	depth;
 } PCTPixle, *PCTPixel;
 
-typedef void (*PCTSPRIMITIVE)(PCTPrimitive prim, PVOID userInput);
-typedef void (*PCTSPIXEL	)(PCTPixel pxl, PVOID userInput);
+typedef void (*PCTSPRIMITIVE)(PCTPrimitive prim, PVOID input);
+typedef void (*PCTSPIXEL	)(PCTPixel pxl, PVOID input);
 
 typedef struct CTShader {
-	PVOID			userInputPtr;
-	SIZE_T			userInputSizeBytes;
+	SIZE_T			shaderInputSizeBytes;
 	PCTSPRIMITIVE	primitiveShader;
 	PCTSPIXEL		pixelShader;
 } CTShader, *PCTShader;
 
-CTCALL	PCTShader	CTShaderCreate(void);
-CTCALL	BOOL		CTShaderSet(PCTSPRIMITIVE sPrim, PCTSPIXEL sPix);
+CTCALL	PCTShader	CTShaderCreate(PCTSPRIMITIVE sPrim, PCTSPIXEL sPix, SIZE_T shaderInputSize);
 CTCALL	BOOL		CTShaderDestroy(PCTShader shader);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -110,7 +115,13 @@ CTCALL	BOOL		CTShaderDestroy(PCTShader shader);
 #define CT_DRAW_METHOD_POINTS	1
 #define CT_DRAW_METHOD_LINES	2
 #define CT_DRAW_METHOD_FILL		3
-CTCALL	BOOL		CTDraw(UINT32 drawMethod, PCTFB frameBuffer, PCTMesh mesh, PCTShader shader);
+CTCALL	BOOL		CTDraw(
+	UINT32		drawMethod, 
+	PCTFB		frameBuffer, 
+	PCTMesh		mesh, 
+	PCTShader	shader, 
+	PVOID		shaderInput
+);
 
 //////////////////////////////////////////////////////////////////////////////
 ///

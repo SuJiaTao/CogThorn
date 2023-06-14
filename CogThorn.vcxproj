@@ -31,6 +31,8 @@
     <ClCompile Include="ct_base_memory.c" />
     <ClCompile Include="ct_dllmain.c" />
     <ClCompile Include="ct_gfx_framebuffer.c" />
+    <ClCompile Include="ct_gfx_memory.c" />
+    <ClCompile Include="ct_gfx_mesh.c" />
     <ClCompile Include="ct_gfx_point.c" />
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />
