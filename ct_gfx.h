@@ -39,13 +39,25 @@ CTCALL	CTVect			CTPointToVector(CTPoint p);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
-///								FRAMEBUFFER
+///								COLOR
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTColor {
 	BYTE a, r, g, b;
-} CTColor, *PCTColor;
+} CTColor, * PCTColor;
+
+CTCALL	CTColor			CTColorCreate(INT r, INT g, INT b, INT a);
+CTCALL	CTColor			CTColorMultipy(CTColor col, FLOAT factor);
+CTCALL	CTColor			CTColorAdd(CTColor c1, CTColor c2);
+CTCALL	CTColor			CTColorBlend(CTColor bottom, CTColor top);
+CTCALL	CTColor			CTColorBlendWeighted(CTColor c1, CTColor c2, FLOAT factor);
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								FRAMEBUFFER
+/// 
+//////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTFrameBuffer {
 	PCTLock		lock;
@@ -92,7 +104,7 @@ CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh);
 typedef struct CTPixel {
 	CTColor color;
 	FLOAT	depth;
-} PCTPixle, *PCTPixel;
+} CTPixel, *PCTPixel;
 
 typedef struct CTPrimitiveContext {
 	UINT32	primID;
@@ -104,10 +116,11 @@ typedef struct CTPixelContext {
 	CTPoint screenCoord;
 	CTVect	UV;
 	PCTFB	frameBuffer;
+	FLOAT	prevDepth;
 } CTPixelContext, *PCTPixelContext, CTPixCtx, *PCTPixCtx;
 
 typedef void (*PCTSPRIMITIVE)(CTPrimCtx ctx, PCTPrimitive prim, PVOID input);
-typedef void (*PCTSPIXEL	)(CTPixCtx ctx, PCTPixel pxl, PVOID input);
+typedef BOOL (*PCTSPIXEL	)(CTPixCtx ctx, PCTPixel pxl, PVOID input);
 
 typedef struct CTShader {
 	SIZE_T			shaderInputSizeBytes;

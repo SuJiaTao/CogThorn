@@ -8,12 +8,29 @@
 
 #include "ct_gfx.h"
 
-static void		__HCTDrawPoints(
-	PCTFB			frameBuffer,
-	PCTPrimitive	prims, 
-	UINT32			primCount, 
-	PCTShader		shader, 
-	PVOID			shaderInput) {
+typedef struct __CTDrawData {
+	PCTFB			frameBuffer;
+	PCTPrimitive	primList;
+	UINT32			primCount;
+	PCTShader		shader;
+	PVOID			shaderInput;
+} __CTDrawData, *P__CTDrawData;
+
+static void		__HCTSetPixel(P__CTDrawData drawData, CTPoint screenPt) {
+
+	if (screenPt.x < 0 ||
+		screenPt.y < 0 ||
+		screenPt.x >= drawData->frameBuffer->width ||
+		screenPt.y >= drawData->frameBuffer->height)
+		return;
+
+	CTPixel drawPix = {
+		.color = 
+	};
+
+}
+
+static void		__HCTDrawPoints(P__CTDrawData drawData) {
 
 	/// SUMMARY:
 	/// loop (all primitives)
@@ -25,17 +42,12 @@ static void		__HCTDrawPoints(
 	///			call pixel shader
 	///		set framebuffer pixel
 	
-	for (UINT32 pixID = 0; pixID < primCount; pixID++) {
+	for (UINT32 pixID = 0; pixID < drawData->primCount; pixID++) {
 
-		PCTPrimitive pPrim	= prims + pixID;
+		PCTPrimitive pPrim	= drawData->primList + pixID;
 		CTPoint	screenPt	= CTPointFromVector(pPrim->vertex);
+		__HCTSetPixel(drawData, screenPt);
 
-		if (screenPt.x < 0 || screenPt.y < 0 ||
-			screenPt.x >= frameBuffer->width ||
-			screenPt.y >= frameBuffer->height)
-			continue;
-
-		if (CTFrameBufferDepthTest(frameBuffer, screenPt))
 	}
 
 }
