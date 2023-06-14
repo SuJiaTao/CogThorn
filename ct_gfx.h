@@ -28,12 +28,12 @@ CTCALL	BOOL		CTGFXFree(PVOID block);
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTPoint {
-	UINT32 x, y;
+	INT32 x, y;
 } CTPoint, * PCTPoint;
 
-CTCALL	CTPoint			CTPointCreate(UINT32 x, UINT32 y);
+CTCALL	CTPoint			CTPointCreate(INT32 x, INT32 y);
 CTCALL	CTPoint			CTPointAdd(CTPoint p1, CTPoint p2);
-CTCALL	CTPoint			CTPointMultiply(CTPoint p, UINT32 factor);
+CTCALL	CTPoint			CTPointMultiply(CTPoint p, INT32 factor);
 CTCALL	CTPoint			CTPointFromVector(CTVect vect);
 CTCALL	CTVect			CTPointToVector(CTPoint p);
 
@@ -94,8 +94,20 @@ typedef struct CTPixel {
 	FLOAT	depth;
 } PCTPixle, *PCTPixel;
 
-typedef void (*PCTSPRIMITIVE)(PCTPrimitive prim, PVOID input);
-typedef void (*PCTSPIXEL	)(PCTPixel pxl, PVOID input);
+typedef struct CTPrimitiveContext {
+	UINT32	primID;
+	PCTMesh	mesh;
+} CTPrimitiveContext, *PCTPrimitiveContext, CTPrimCtx, *PCTPrimCtx;
+
+typedef struct CTPixelContext {
+	UINT32	pixID;
+	CTPoint screenCoord;
+	CTVect	UV;
+	PCTFB	frameBuffer;
+} CTPixelContext, *PCTPixelContext, CTPixCtx, *PCTPixCtx;
+
+typedef void (*PCTSPRIMITIVE)(CTPrimCtx ctx, PCTPrimitive prim, PVOID input);
+typedef void (*PCTSPIXEL	)(CTPixCtx ctx, PCTPixel pxl, PVOID input);
 
 typedef struct CTShader {
 	SIZE_T			shaderInputSizeBytes;

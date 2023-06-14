@@ -8,7 +8,7 @@
 
 #include "ct_gfx.h"
 
-CTCALL	CTPoint			CTPointCreate(UINT32 x, UINT32 y) {
+CTCALL	CTPoint			CTPointCreate(INT32 x, INT32 y) {
 	CTPoint rp = {
 		.x = x,
 		.y = y
@@ -24,7 +24,7 @@ CTCALL	CTPoint			CTPointAdd(CTPoint p1, CTPoint p2) {
 	return rp;
 }
 
-CTCALL	CTPoint			CTPointMultiply(CTPoint p, UINT32 factor) {
+CTCALL	CTPoint			CTPointMultiply(CTPoint p, INT32 factor) {
 	CTPoint rp = {
 		.x = p.x * factor,
 		.y = p.y * factor
@@ -34,8 +34,8 @@ CTCALL	CTPoint			CTPointMultiply(CTPoint p, UINT32 factor) {
 
 CTCALL	CTPoint			CTPointFromVector(CTVect vect) {
 	CTPoint rp = {
-		.x = (UINT32)(max(0, vect.x) + 0.5f),
-		.y = (UINT32)(max(0, vect.y) + 0.5f)
+		.x = (INT32)(vect.x + 0.5f),
+		.y = (INT32)(vect.y + 0.5f)
 	};
 	return rp;
 }
