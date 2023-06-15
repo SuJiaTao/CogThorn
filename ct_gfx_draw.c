@@ -38,6 +38,9 @@ static void __HCTProcessAndDrawPixel(
 	///		if (should discard pixel)
 	///			return
 	/// 
+	/// if (point is out of bounds again)
+	///		return
+	/// 
 	/// get below color
 	/// generate blended color
 	/// set frameBuffer pixel to blended color
@@ -47,8 +50,8 @@ static void __HCTProcessAndDrawPixel(
 		screenCoord.x < 0 ||
 		screenCoord.y < 0) return;
 
-	if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE)
-		return;
+	if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE &&
+		drawInfo->shader->depthTest == TRUE) return;
 
 	CTPixCtx pixCtx = {
 		.frameBuffer	= drawInfo->frameBuffer,
@@ -82,6 +85,11 @@ static void __HCTProcessAndDrawPixel(
 
 	}
 
+	if (pixel.screenCoord.x >= drawInfo->frameBuffer->width ||
+		pixel.screenCoord.y >= drawInfo->frameBuffer->height ||
+		pixel.screenCoord.x < 0 ||
+		pixel.screenCoord.y < 0) return;
+
 	CTColor newColor = CTColorBlend(belowColor, pixel.color);
 	CTFrameBufferSet(
 		drawInfo->frameBuffer,
@@ -92,17 +100,114 @@ static void __HCTProcessAndDrawPixel(
 
 }
 
-static void __HCTDrawPoints(PCTPrimitive primList, P__CTDrawInfo drawInfo) {
+static void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawInfo drawInfo) {
 
 	/// SUMMARY:
+	/// initialize pixID
 	/// loop (all prims in prim list)
+	///		calculate ptPos
 	///		loop (ptPos.x - ptSize / 2, ptPos.x + ptSize / 2)
 	///			loop (ptPos.y - ptSize / 2, ptPos.y + ptSize / 2)
-	///				setup pixel context
-	///				setup pixel object
-	///				if (pixelShader != NULL)
-	///					process pixel with shader
-	///				write pixel to framebuffer
+	///				drawPixel
+	///				increment pixID
+	
+	UINT32 pixID = 0;
+
+	for (UINT32 pixIndex = 0; pixIndex < primCount; pixIndex++) {
+
+		const INT halfPtSize	= drawInfo->shader->pointSizePixels / 2;
+		const CTPoint pixPt		= CTPointFromVector(primList[pixIndex].vertex);
+
+		for (INT drawX = pixPt.x - halfPtSize; drawX < pixPt.x + halfPtSize; drawX++) {
+
+			for (INT drawY = pixPt.y - halfPtSize; drawY < pixPt.y + halfPtSize; drawY++) {
+
+				__HCTProcessAndDrawPixel(
+					drawInfo,
+					pixID,
+					CTPointCreate(drawX, drawY),
+					primList[pixIndex].UV
+				);
+
+				pixID++;
+			}
+
+		}
+
+	}
+
+}
+
+static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo drawInfo) {
+
+	/// SUMMARY:
+	/// generate normalized direction vector from prim1 to prim2 as "dn"
+	/// centerX = p1.x
+	/// centerY = p1.y
+	/// setup pixID
+	/// loop (each pixel in hypotenuses (roughly))
+	///		for (centerX - lineSize / 2 to centerX + lineSize / 2)
+	///			for (centerY - lineSize / 2 to centerY + lineSize / 2)
+	///				calculate UV as weighted average of draw position's distance to each primitive
+	///				draw pixel
+	///				increment pixID
+	///		centerX += dn.x
+	///		centerY += dn.y
+	///		
+	
+	const CTVect delta				= CTVectSubtract(prim2->vertex, prim1->vertex);
+	const FLOAT  deltaMag			= CTVectMagnitudeFast(delta);
+	const CTVect deltaNormalized	= CTVectMultiply(delta, 1.0f / deltaMag);
+
+	FLOAT drawX		= prim1->vertex.x;
+	FLOAT drawY		= prim1->vertex.y;
+	UINT32 pixID	= 0;
+	for (UINT32 walk = 0; walk < (deltaMag); walk++) {
+
+		const INT halfPtSize	= drawInfo->shader->lineSizePixels / 2;
+		const CTPoint pixPt		= CTPointCreate(drawX, drawY);
+
+		for (INT drawX = pixPt.x - halfPtSize; drawX < pixPt.x + halfPtSize; drawX++) {
+
+			for (INT drawY = pixPt.y - halfPtSize; drawY < pixPt.y + halfPtSize; drawY++) {
+
+				FLOAT p1Dist = CTVectMagnitudeFast(
+					CTVectSubtract(
+						CTVectCreate(drawX, drawY),
+						prim1->vertex
+					)
+				);
+				FLOAT p2Dist = CTVectMagnitudeFast(
+					CTVectSubtract(
+						CTVectCreate(drawX, drawY),
+						prim2->vertex
+					)
+				);
+
+				FLOAT p1UVFactor = p1Dist / (p1Dist + p2Dist);
+				FLOAT p2UVFactor = 1.0f - p1UVFactor;
+
+				CTVect pointUV = CTVectCreate(
+					prim1->UV.x * p1UVFactor + prim2->UV.x * p2UVFactor,
+					prim1->UV.y * p1UVFactor + prim2->UV.y * p2UVFactor
+				);
+
+				__HCTProcessAndDrawPixel(
+					drawInfo,
+					pixID,
+					CTPointCreate(drawX, drawY),
+					pointUV
+				);
+
+				pixID++;
+			}
+
+		}
+
+		drawX += deltaNormalized.x;
+		drawY += deltaNormalized.y;
+
+	}
 }
 
 CTCALL	BOOL		CTDraw(
@@ -139,6 +244,8 @@ CTCALL	BOOL		CTDraw(
 	///		if (primitive shader != NULL)
 	///			process primitive with shader
 	/// 
+	/// setup drawInfo object
+	/// 
 	/// switch (drawMethod);
 	///		POINTS:
 	///		draw points
@@ -161,9 +268,9 @@ CTCALL	BOOL		CTDraw(
 		shader->shaderInputSizeBytes
 	);
 
-	PCTPrimitive primList = CTGFXAlloc(sizeof(CTPrimitive) * mesh->primCount);
+	PCTPrimitive processedPrimList = CTGFXAlloc(sizeof(CTPrimitive) * mesh->primCount);
 	__movsb(
-		primList, 
+		processedPrimList, 
 		mesh->primList, 
 		sizeof(CTPrimitive) * mesh->primCount
 	);
@@ -178,16 +285,24 @@ CTCALL	BOOL		CTDraw(
 		if (shader->primitiveShader != NULL) {
 			shader->primitiveShader(
 				primtCtx,
-				primList + primID,
+				processedPrimList + primID,
 				shaderInputCopy
 			);
 		}
 
 	}
 
+	__CTDrawInfo drawInfo = {
+		.depth			= depth,
+		.frameBuffer	= frameBuffer,
+		.shader			= shader,
+		.shaderInput	= shaderInputCopy
+	};
+
 	switch (drawMethod)
 	{
 	case CT_DRAW_METHOD_POINTS:
+		__HCTDrawPoints(processedPrimList, mesh->primCount, &drawInfo);
 		break;
 
 	case CT_DRAW_METHOD_LINES_OPEN:

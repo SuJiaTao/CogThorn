@@ -20,8 +20,8 @@ CTCALL	PCTShader	CTShaderCreate(
 	rs->primitiveShader			= sPrim;
 	rs->pixelShader				= sPix;
 	rs->shaderInputSizeBytes	= shaderInputSize;
-	rs->pointSizePixels			= pointSize;
-	rs->lineSizePixels			= lineSize;
+	rs->pointSizePixels			= max(CT_SHADER_POINTSIZE_MIN, min(pointSize, CT_SHADER_POINTSIZE_MAX));
+	rs->lineSizePixels			= max(CT_SHADER_LINESIZE_MIN,  min(lineSize,  CT_SHADER_LINESIZE_MAX));
 	rs->depthTest				= depthTest;
 	return rs;
 }

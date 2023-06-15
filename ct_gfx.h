@@ -129,6 +129,10 @@ typedef struct CTShader {
 	BOOL			depthTest;
 } CTShader, *PCTShader;
 
+#define CT_SHADER_POINTSIZE_MIN		1
+#define CT_SHADER_POINTSIZE_MAX		4
+#define CT_SHADER_LINESIZE_MIN		1
+#define CT_SHADER_LINESIZE_MAX		4
 CTCALL	PCTShader	CTShaderCreate(
 	PCTSPRIMITIVE	sPrim, 
 	PCTSPIXEL		sPix, 
