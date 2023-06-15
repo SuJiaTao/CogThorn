@@ -103,7 +103,7 @@ CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh);
 
 typedef struct CTPixel {
 	CTColor color;
-	FLOAT	depth;
+	CTPoint	screenCoord;
 } CTPixel, *PCTPixel;
 
 typedef struct CTPrimitiveContext {
@@ -113,10 +113,8 @@ typedef struct CTPrimitiveContext {
 
 typedef struct CTPixelContext {
 	UINT32	pixID;
-	CTPoint screenCoord;
-	CTVect	UV;
 	PCTFB	frameBuffer;
-	FLOAT	prevDepth;
+	CTVect	UV;
 } CTPixelContext, *PCTPixelContext, CTPixCtx, *PCTPixCtx;
 
 typedef void (*PCTSPRIMITIVE)(CTPrimCtx ctx, PCTPrimitive prim, PVOID input);
@@ -126,9 +124,19 @@ typedef struct CTShader {
 	SIZE_T			shaderInputSizeBytes;
 	PCTSPRIMITIVE	primitiveShader;
 	PCTSPIXEL		pixelShader;
+	UINT32			pointSizePixels;
+	UINT32			lineSizePixels;
+	BOOL			depthTest;
 } CTShader, *PCTShader;
 
-CTCALL	PCTShader	CTShaderCreate(PCTSPRIMITIVE sPrim, PCTSPIXEL sPix, SIZE_T shaderInputSize);
+CTCALL	PCTShader	CTShaderCreate(
+	PCTSPRIMITIVE	sPrim, 
+	PCTSPIXEL		sPix, 
+	SIZE_T			shaderInputSize,
+	UINT32			pointSize,
+	UINT32			lineSize,
+	BOOL			depthTest
+);
 CTCALL	BOOL		CTShaderDestroy(PCTShader shader);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -137,15 +145,17 @@ CTCALL	BOOL		CTShaderDestroy(PCTShader shader);
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_DRAW_METHOD_POINTS	1
-#define CT_DRAW_METHOD_LINES	2
-#define CT_DRAW_METHOD_FILL		3
+#define CT_DRAW_METHOD_POINTS		0
+#define CT_DRAW_METHOD_LINES_OPEN	1
+#define CT_DRAW_METHOD_LINES_CLOSED	2
+#define CT_DRAW_METHOD_FILL			3
 CTCALL	BOOL		CTDraw(
 	UINT32		drawMethod, 
 	PCTFB		frameBuffer, 
 	PCTMesh		mesh, 
 	PCTShader	shader, 
-	PVOID		shaderInput
+	PVOID		shaderInput,
+	FLOAT		depth
 );
 
 //////////////////////////////////////////////////////////////////////////////

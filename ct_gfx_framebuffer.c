@@ -78,7 +78,7 @@ CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
 	UINT32 index = pt.x + (pt.y * fb->width);
 
 	CTLockEnter(&fb->lock);
-	BOOL depthTest = fb->depth[index] >= depth;
+	BOOL depthTest = fb->depth[index] > depth;
 	CTLockLeave(&fb->lock);
 
 	return depthTest;

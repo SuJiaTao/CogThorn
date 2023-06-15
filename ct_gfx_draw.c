@@ -8,48 +8,101 @@
 
 #include "ct_gfx.h"
 
-typedef struct __CTDrawData {
-	PCTFB			frameBuffer;
-	PCTPrimitive	primList;
-	UINT32			primCount;
-	PCTShader		shader;
-	PVOID			shaderInput;
-} __CTDrawData, *P__CTDrawData;
+typedef struct __CTDrawInfo {
+	PCTFB		frameBuffer;
+	PCTShader	shader;
+	PVOID		shaderInput;
+	FLOAT		depth;
+} __CTDrawInfo, *P__CTDrawInfo;
 
-static void		__HCTSetPixel(P__CTDrawData drawData, CTPoint screenPt) {
 
-	if (screenPt.x < 0 ||
-		screenPt.y < 0 ||
-		screenPt.x >= drawData->frameBuffer->width ||
-		screenPt.y >= drawData->frameBuffer->height)
-		return;
-
-	CTPixel drawPix = {
-		.color = 
-	};
-
-}
-
-static void		__HCTDrawPoints(P__CTDrawData drawData) {
+static void __HCTProcessAndDrawPixel(
+	P__CTDrawInfo	drawInfo, 
+	UINT32			pixID, 
+	CTPoint			screenCoord, 
+	CTVect			UV
+) {
 
 	/// SUMMARY:
-	/// loop (all primitives)
-	///		convert vertex position to screen coordinate
-	///		early cull if out of bounds
-	///		do early depth test
-	///		setup pixel ctx
-	///		if (pixel shader exists)
-	///			call pixel shader
-	///		set framebuffer pixel
+	/// if (point is out of bounds)
+	///		return
+	/// 
+	/// if (depth test failed)
+	///		return
+	/// 
+	/// setup pixelCtx
+	/// setup pixel
+	/// 
+	/// if (pixelShader != NULL)
+	///		process pixel with shader
+	///		if (should discard pixel)
+	///			return
+	/// 
+	/// get below color
+	/// generate blended color
+	/// set frameBuffer pixel to blended color
 	
-	for (UINT32 pixID = 0; pixID < drawData->primCount; pixID++) {
+	if (screenCoord.x >= drawInfo->frameBuffer->width	||
+		screenCoord.y >= drawInfo->frameBuffer->height	||
+		screenCoord.x < 0 ||
+		screenCoord.y < 0) return;
 
-		PCTPrimitive pPrim	= drawData->primList + pixID;
-		CTPoint	screenPt	= CTPointFromVector(pPrim->vertex);
-		__HCTSetPixel(drawData, screenPt);
+	if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE)
+		return;
+
+	CTPixCtx pixCtx = {
+		.frameBuffer	= drawInfo->frameBuffer,
+		.pixID			= pixID,
+		.UV				= UV
+	};
+
+	CTPixel pixel = {
+		.screenCoord	= screenCoord,
+		.color			= CTColorCreate(0, 0, 0, 0)
+	};
+	
+	CTColor belowColor;
+	CTFrameBufferGet(
+		drawInfo->frameBuffer, 
+		screenCoord, 
+		&belowColor, 
+		NULL
+	);
+
+	if (drawInfo->shader->pixelShader != NULL) {
+
+		BOOL keepPixel = drawInfo->shader->pixelShader(
+			pixCtx,
+			&pixel,
+			drawInfo->shaderInput
+		);
+
+		if (keepPixel == FALSE)
+			return;
 
 	}
 
+	CTColor newColor = CTColorBlend(belowColor, pixel.color);
+	CTFrameBufferSet(
+		drawInfo->frameBuffer,
+		pixel.screenCoord,
+		newColor,
+		drawInfo->depth
+	);
+
+}
+
+static void __HCTDrawPoints(PCTPrimitive primList, P__CTDrawInfo drawInfo) {
+
+	/// SUMMARY:
+	/// loop (all prims in prim list)
+	///		loop (ptPos.x - ptSize / 2, ptPos.x + ptSize / 2)
+	///			loop (ptPos.y - ptSize / 2, ptPos.y + ptSize / 2)
+	///				setup pixel context
+	///				setup pixel object
+	///				if (pixelShader != NULL)
+	///					process pixel with shader
+	///				write pixel to framebuffer
 }
 
 CTCALL	BOOL		CTDraw(
@@ -57,7 +110,8 @@ CTCALL	BOOL		CTDraw(
 	PCTFB		frameBuffer,
 	PCTMesh		mesh,
 	PCTShader	shader,
-	PVOID		shaderInput
+	PVOID		shaderInput,
+	FLOAT		depth
 ) {
 
 	if (frameBuffer == NULL) {
@@ -78,43 +132,53 @@ CTCALL	BOOL		CTDraw(
 	}
 
 	/// SUMMARY:
+	/// create copy of shader input
+	/// create copy of mesh primitives
 	/// 
-	/// copy shader input
-	/// make copy of primitives
-	/// process primitives using primitive shader
+	/// loop(all primitives in copy)
+	///		if (primitive shader != NULL)
+	///			process primitive with shader
 	/// 
-	/// switch (drawMethod):
-	///		DRAW_POINTS:
-	///		draw each point
-	/// 
-	///		DRAW_LINES:
-	///		draw line strip from each primitive to the next in a closed shape
-	///	
-	///		DRAW_FILL:
-	///		triangulate and fill polygon
-	/// 
+	/// switch (drawMethod);
+	///		POINTS:
+	///		draw points
+	///		LINES_OPEN:
+	///		line array of all verts in mesh
+	///		LINES_CLOSED:
+	///		closed polygon outline of mesh
+	///		FILLED:
+	///		filled mesh
 	///		UNKNOWN:
-	///		raise error, return FALSE
+	///		raise error
+	///		return FALSE
 	/// 
 	/// return TRUE
 
 	PVOID shaderInputCopy = CTGFXAlloc(shader->shaderInputSizeBytes);
-	__movsb(shaderInputCopy, shaderInput, shader->shaderInputSizeBytes);
+	__movsb(
+		shaderInputCopy, 
+		shaderInput, 
+		shader->shaderInputSizeBytes
+	);
 
-	PCTPrimitive primivites = CTGFXAlloc(sizeof(CTPrimitive) * mesh->primCount);
-	__movsb(primivites, mesh->primList, sizeof(CTPrimitive) * mesh->primCount);
+	PCTPrimitive primList = CTGFXAlloc(sizeof(CTPrimitive) * mesh->primCount);
+	__movsb(
+		primList, 
+		mesh->primList, 
+		sizeof(CTPrimitive) * mesh->primCount
+	);
 
 	for (UINT32 primID = 0; primID < mesh->primCount; primID++) {
 
-		CTPrimCtx ctx = {
+		CTPrimCtx primtCtx = {
 			.primID = primID,
 			.mesh	= mesh
 		};
 
-		if (shader->primitiveShader) {
+		if (shader->primitiveShader != NULL) {
 			shader->primitiveShader(
-				ctx,
-				primivites + primID,
+				primtCtx,
+				primList + primID,
 				shaderInputCopy
 			);
 		}
@@ -126,7 +190,10 @@ CTCALL	BOOL		CTDraw(
 	case CT_DRAW_METHOD_POINTS:
 		break;
 
-	case CT_DRAW_METHOD_LINES:
+	case CT_DRAW_METHOD_LINES_OPEN:
+		break;
+
+	case CT_DRAW_METHOD_LINES_CLOSED:
 		break;
 
 	case CT_DRAW_METHOD_FILL:
