@@ -10,10 +10,126 @@
 
 #include <stdio.h>
 
-static LRESULT CALLBACK __HCTWindowProc(HWND win, UINT msg, WPARAM wP, LPARAM lP) {
+#define CT_WINDOW_CLOSE_MESSAGE		(WM_USER + 0x10)
 
+static LRESULT CALLBACK __HCTWindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	/// SUMMARY:
+	/// gets ctwindow ptr from hwnd
+	/// 
+	/// switch (msg):
+	///		PAINT:
+	///		if (no framebuffer attached)
+	///			break
+	///		
+	/// 
+	///		setup bitmap and draw	
+	/// 
+	///		ERASE BACKGROUND:
+	///		return
+	/// 
+	///		CLOSE:
+	///		set close flag to true
+	///		return
+	/// 
+	///		USER_WINDOW_CLOSE:
+	///		free window name
+	///		free window
+	///		deletes window class
+	///		return
+	/// 
+	///		DEFAULT:
+	///		return DEFWINDOWPROC
+	/// 
+	/// unlocks window
+	
+	PCTWin ctwindow = GetWindowLongPtrA(hwnd, GWLP_USERDATA);
 
-	return DefWindowProcA(win, msg, wP, lP);
+	switch (message)
+	{
+
+	case WM_PAINT: 
+	{
+		if (ctwindow->frameBuffer == NULL)
+			break;
+
+		RECT drawRect;
+		GetClientRect(ctwindow->wndHandle, &drawRect);
+		DWORD windowWidth	= drawRect.right - drawRect.left;
+		DWORD windowHeight	= drawRect.bottom - drawRect.top;
+
+		PAINTSTRUCT paintStruct;
+		HDC paintDC = BeginPaint(ctwindow->wndHandle, &paintStruct);
+
+		BITMAP rbBitmap;
+		rbBitmap.bmType			= 0;
+		rbBitmap.bmWidth		= ctwindow->frameBuffer->width;
+		rbBitmap.bmHeight		= ctwindow->frameBuffer->height;
+		rbBitmap.bmWidthBytes	= ctwindow->frameBuffer->width * sizeof(CTColor);
+		rbBitmap.bmPlanes		= 1;
+		rbBitmap.bmBitsPixel	= 32;
+		rbBitmap.bmBits			= ctwindow->frameBuffer->color;
+
+		HBITMAP hBitMap = CreateBitmapIndirect(&rbBitmap);
+		HDC bitmapDC	= CreateCompatibleDC(paintDC);
+		SelectObject(bitmapDC, hBitMap);
+
+		BLENDFUNCTION blendFunc;
+		ZeroMemory(&blendFunc, sizeof(blendFunc));
+		blendFunc.BlendOp				= AC_SRC_OVER;
+		blendFunc.BlendFlags			= 0;
+		blendFunc.SourceConstantAlpha	= 255;
+		blendFunc.BlendFlags			= 0;
+
+		CTFrameBufferLock(ctwindow->frameBuffer);
+
+		BOOL drawResult = AlphaBlend(
+			paintDC, 
+			0, 
+			0, 
+			windowWidth, 
+			windowHeight,
+			bitmapDC, 
+			0, 
+			0, 
+			ctwindow->frameBuffer->width, 
+			ctwindow->frameBuffer->height,
+			blendFunc
+		);
+
+		CTFrameBufferUnlock(ctwindow->frameBuffer);
+
+		DeleteObject(hBitMap);
+		DeleteObject(bitmapDC);
+
+		EndPaint(ctwindow->wndHandle, &paintStruct);
+
+		break;
+	}
+
+	case WM_ERASEBKGND:
+		return TRUE;
+
+	case WM_CLOSE:
+
+		CTLockEnter(ctwindow->lock);
+		ctwindow->shouldClose = TRUE;
+		CTLockLeave(ctwindow->lock);
+
+		return FALSE;
+
+	case CT_WINDOW_CLOSE_MESSAGE:
+
+		UnregisterClassA(ctwindow->wndClassName, NULL);
+		CTGFXFree(ctwindow->wndClassName);
+		CTGFXFree(ctwindow);
+
+		break;
+
+	default:
+		break;
+	}
+
+	return DefWindowProcA(ctwindow, message, wParam, lParam);
 }
 
 CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height) {
@@ -36,7 +152,6 @@ CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height) {
 	rWindow->lock					= CTLockCreate();
 	rWindow->shouldClose			= FALSE;
 	rWindow->frameBuffer			= NULL;
-	rWindow->frameBufferFitMethod	= CT_WINDOW_FB_FIT_MAX_DIMENSION;
 	
 	CHAR wndNameBuffer[MAX_PATH] = { 0 };
 	sprintf_s(
@@ -126,6 +241,19 @@ CTCALL	BOOL	CTWindowSetSize(PCTWin window, UINT32 width, UINT height) {
 	return TRUE;
 }
 
+CTCALL	BOOL	CTWindowSetFrameBuffer(PCTWin window, PCTFB frameBuffer) {
+	if (window == NULL) {
+		CTErrorSetBadObject("CTWindowSetFrameBuffer failed: window was NULL");
+		return FALSE;
+	}
+
+	CTLockEnter(window->lock);
+	window->frameBuffer = frameBuffer;
+	CTLockLeave(window->lock);
+
+	return TRUE;
+}
+
 CTCALL	BOOL	CTWindowShouldClose(PCTWindow window) {
 	if (window == NULL) {
 		CTErrorSetBadObject("CTWindowShouldClose failed: window was NULL");
@@ -178,10 +306,8 @@ CTCALL	BOOL	CTWindowDestroy(PCTWin window) {
 	}
 
 	CTLockEnter(window->lock);
-	CTLockDestroy(window->lock);
+	SendMessageA(window->wndHandle, CT_WINDOW_CLOSE_MESSAGE, 0, 0);
+	CTLockLeave(window->lock);
 
-	CTGFXFree(window->wndClassName);
-	CTGFXFree(window);
-	
 	return TRUE;
 }
