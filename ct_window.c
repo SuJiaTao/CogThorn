@@ -17,8 +17,90 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		SetWindowLongPtrA(window, GWLP_USERDATA, userWindow);
 	}
 
-	PVOID ptr = GetWindowLongPtrA(window, GWLP_USERDATA);
+	PCTWin ctwin = GetWindowLongPtrA(window, GWLP_USERDATA);
 
+	if (message == WM_CLOSE) {
+		ctwin->shouldClose = TRUE;
+		return TRUE;
+	}
+
+	if (message == CT_WINDOW_CLOSEMESSAGE) {
+		UnregisterClassA(ctwin->wndClassName, NULL);
+		CTLockDestroy(ctwin->lock);
+		CTGFXFree(ctwin);
+
+		message = WM_CLOSE;
+
+		goto __CTWinProcEnd;
+	}
+
+	if (message == WM_ERASEBKGND) {
+		return TRUE;
+	}
+
+	if (message == WM_PAINT) {
+
+		if (ctwin == NULL) {
+			CTErrorSetFunction("__HCTWindowProc failed because GWLP_USERDATA was overwritten or corrupted.");
+			goto __CTWinProcEnd;
+		}
+
+		CTWindowLock(ctwin);
+
+		if (ctwin->frameBuffer == NULL) {
+			goto __CTWinProcEnd;
+		}
+
+		PAINTSTRUCT paintObj;
+		HDC paintDC = BeginPaint(ctwin->hwnd, &paintObj);
+
+		PCTFB frameBuffer = ctwin->frameBuffer;
+
+		BITMAP rbBitmap;
+		rbBitmap.bmType			= 0;
+		rbBitmap.bmWidth		= frameBuffer->width;
+		rbBitmap.bmHeight		= frameBuffer->height;
+		rbBitmap.bmWidthBytes	= frameBuffer->width * sizeof(CTColor);
+		rbBitmap.bmPlanes		= 1;
+		rbBitmap.bmBitsPixel	= 32;
+		rbBitmap.bmBits			= frameBuffer->color;
+
+		HBITMAP hBitMap = CreateBitmapIndirect(&rbBitmap);
+
+		HDC bitmapDC = CreateCompatibleDC(paintDC);
+		SelectObject(bitmapDC, hBitMap);
+
+		BLENDFUNCTION blendFunc;
+		ZeroMemory(&blendFunc, sizeof(blendFunc));
+		blendFunc.BlendOp = AC_SRC_OVER;
+		blendFunc.BlendFlags = NULL;
+		blendFunc.SourceConstantAlpha = 255;
+		blendFunc.BlendFlags = NULL;
+
+		RECT drawRect;
+		GetClientRect(ctwin->hwnd, &drawRect);
+		DWORD drawAreaWidth		= drawRect.right - drawRect.left;
+		DWORD drawAreaHeight	= drawRect.bottom - drawRect.top;
+
+		BOOL drawResult = AlphaBlend(
+			paintDC, 0, 0,
+			drawAreaWidth, 
+			drawAreaHeight,
+			bitmapDC, 0, 0, 
+			frameBuffer->width, 
+			frameBuffer->height,
+			blendFunc
+		);
+
+		DeleteObject(hBitMap);
+		DeleteObject(bitmapDC);
+
+		EndPaint(ctwin->hwnd, &paintObj);
+
+		CTWindowUnlock(ctwin);
+	}
+
+__CTWinProcEnd:
 	return DefWindowProcA(window, message, wParam, lParam);
 }
 
@@ -26,7 +108,8 @@ CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height) {
 
 	PCTWin window = CTGFXAlloc(sizeof(*window));
 	window->frameBuffer = NULL;
-	window->lock = CTLockCreate();
+	window->lock		= CTLockCreate();
+	window->shouldClose	= FALSE;
 
 	sprintf_s(
 		window->wndClassName,
@@ -158,10 +241,39 @@ CTCALL	BOOL	CTWindowUpdate(PCTWindow window) {
 
 	CTWindowLock(window);
 
+	InvalidateRect(window->hwnd, NULL, FALSE);
+	UpdateWindow(window->hwnd);
+
 	MSG messageBuff;
 	PeekMessageA(&messageBuff, window->hwnd, 0, 0, PM_REMOVE);
 	DispatchMessageA(&messageBuff);
 
+	CTWindowUnlock(window);
+
+	return TRUE;
+}
+
+CTCALL	BOOL	CTWindowShouldClose(PCTWindow window) {
+	if (window == NULL) {
+		CTErrorSetBadObject("CTWindowShouldClose failed because window was NULL");
+		return FALSE;
+	}
+
+	CTWindowLock(window);
+	BOOL value = window->shouldClose;
+	CTWindowUnlock(window);
+
+	return value;
+}
+
+CTCALL	BOOL	CTWindowSetShouldClose(PCTWindow window, BOOL state) {
+	if (window == NULL) {
+		CTErrorSetBadObject("CTWindowShouldClose failed because window was NULL");
+		return FALSE;
+	}
+
+	CTWindowLock(window);
+	window->shouldClose = state;
 	CTWindowUnlock(window);
 
 	return TRUE;
@@ -174,4 +286,8 @@ CTCALL	BOOL	CTWindowDestroy(PCTWin window) {
 	}
 
 	CTWindowLock(window);
+
+	SendMessageA(window->hwnd, CT_WINDOW_CLOSEMESSAGE, NULL, NULL);
+
+	return TRUE;
 }
