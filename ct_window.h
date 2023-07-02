@@ -17,12 +17,14 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#define CT_WINDOW_NAME_SIZE			0xFF
+#define CT_WINDOW_STYLE				WS_VISIBLE | WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME) 
 typedef struct CTWindow {
 	PCTLock	lock;
-	PCHAR	wndClassName;
 	HWND	hwnd;
-	BOOL	shouldClose;
 	PCTFB	frameBuffer;
+	PVOID	userData;
+	CHAR	wndClassName[CT_WINDOW_NAME_SIZE];
 } CTWindow, *PCTWindow, CTWin, *PCTWin;
 
 CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height);
