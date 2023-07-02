@@ -77,9 +77,9 @@ CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
 
 	UINT32 index = pt.x + (pt.y * fb->width);
 
-	CTLockEnter(&fb->lock);
+	CTLockEnter(fb->lock);
 	BOOL depthTest = fb->depth[index] > depth;
-	CTLockLeave(&fb->lock);
+	CTLockLeave(fb->lock);
 
 	return depthTest;
 }
@@ -132,7 +132,7 @@ CTCALL	BOOL	CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth) {
 		return FALSE;
 	}
 
-	CTLockEnter(fb);
+	CTLockEnter(fb->lock);
 
 	const FLOAT		CLEAR_DEPTH_VALUE	= FLT_MAX;
 	const UINT32	FB_ELEMENT_COUNT	= fb->width * fb->height;
@@ -141,7 +141,7 @@ CTCALL	BOOL	CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth) {
 	if (depth == TRUE)
 		__stosd(fb->depth, *(PDWORD)&CLEAR_DEPTH_VALUE, FB_ELEMENT_COUNT);
 
-	CTLockLeave(fb);
+	CTLockLeave(fb->lock);
 
 	return TRUE;
 }

@@ -33,7 +33,7 @@ CTCALL	BOOL		CTLockEnter(PCTLock lock) {
 		return FALSE;
 	}
 
-	EnterCriticalSection(&lock);
+	EnterCriticalSection(&lock->lock);
 
 	return TRUE;
 }
@@ -44,7 +44,7 @@ CTCALL	BOOL		CTLockLeave(PCTLock lock) {
 		return FALSE;
 	}
 
-	LeaveCriticalSection(&lock);
+	LeaveCriticalSection(&lock->lock);
 
 	return TRUE;
 }

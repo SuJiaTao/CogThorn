@@ -34,9 +34,11 @@ BOOL WINAPI DllMain(
         __ctgfx = LocalAlloc(0, sizeof(*__ctgfx));
         if (__ctgfx == NULL) return FALSE;
 
-        ZeroMemory(__ctbase, sizeof(*__ctgfx));
+        ZeroMemory(__ctgfx, sizeof(*__ctgfx));
 
         __ctgfx->heap = HeapCreate(0, 0, 0);
+
+        SetProcessDPIAware();
 
         break;
 
