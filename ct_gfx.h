@@ -44,7 +44,7 @@ CTCALL	CTVect			CTPointToVector(CTPoint p);
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTColor {
-	BYTE a, r, g, b;
+	BYTE b, g, r, a;
 } CTColor, * PCTColor;
 
 CTCALL	CTColor			CTColorCreate(INT r, INT g, INT b, INT a);

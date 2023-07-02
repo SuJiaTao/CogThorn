@@ -17,10 +17,15 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_WINDOW_NAME_SIZE			0xFF
-#define CT_WINDOW_STYLE				WS_VISIBLE | WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME) 
 #define CT_WINDOW_CLOSEMESSAGE		WM_USER + 0x20
+
+#define CT_WINDOW_FULLMENU		(WS_VISIBLE | WS_BORDER | WS_OVERLAPPEDWINDOW & ~(WS_THICKFRAME))
+#define CT_WINDOW_MINMENU		(WS_VISIBLE | WS_BORDER | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU)
+#define CT_WINDOW_SPLASH		(WS_VISIBLE | WS_BORDER)
+
+#define CT_WINDOW_NAME_SIZE			0xFF
 typedef struct CTWindow {
+	DWORD	type;
 	PCTLock	lock;
 	HWND	hwnd;
 	PCTFB	frameBuffer;
@@ -28,7 +33,7 @@ typedef struct CTWindow {
 	CHAR	wndClassName[CT_WINDOW_NAME_SIZE];
 } CTWindow, *PCTWindow, CTWin, *PCTWin;
 
-CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height);
+CTCALL	PCTWin	CTWindowCreate(DWORD type, PCHAR title, UINT32 width, UINT32 height);
 CTCALL	BOOL	CTWindowLock(PCTWin window);
 CTCALL	BOOL	CTWindowUnlock(PCTWin window);
 CTCALL	BOOL	CTWindowSetTitle(PCTWin window, PCHAR title);

@@ -10,36 +10,74 @@
 
 #include <stdio.h>
 
+static POINT __HCTCalculateWindowSize(PCTWindow win, DWORD targetWidth, DWORD targetHeight) {
+
+	RECT windowRect = {
+		.bottom		= targetWidth,
+		.top		= 0,
+		.left		= 0,
+		.right		= targetHeight
+	};
+
+	switch (win->type)
+	{
+	case CT_WINDOW_FULLMENU:
+		AdjustWindowRect(&windowRect, CT_WINDOW_FULLMENU, TRUE);
+		break;
+
+	case CT_WINDOW_MINMENU:
+		AdjustWindowRect(&windowRect, CT_WINDOW_MINMENU, TRUE);
+		break;
+
+	case CT_WINDOW_SPLASH:
+		AdjustWindowRect(&windowRect, CT_WINDOW_SPLASH, FALSE);
+		break;
+
+	default:
+		CTErrorSetFunction("__HCTCalculateWindowSize failed: unknown window type");
+		break;
+	}
+
+	POINT pt = {
+		.x = windowRect.right  - windowRect.left,
+		.y = windowRect.bottom - windowRect.top
+	};
+
+	return pt;
+}
+
 static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
 
-	if (message == WM_CREATE) {
-		PCTWindow userWindow = (PCTWindow)((LPCREATESTRUCTA)lParam)->lpCreateParams;
-		SetWindowLongPtrA(window, GWLP_USERDATA, userWindow);
-	}
 
 	PCTWin ctwin = GetWindowLongPtrA(window, GWLP_USERDATA);
 
-	if (message == WM_CLOSE) {
+	switch (message) {
+
+	case WM_NCCREATE: {
+		PCTWindow userWindow = (PCTWindow)((LPCREATESTRUCTA)lParam)->lpCreateParams;
+		SetWindowLongPtrA(window, GWLP_USERDATA, userWindow);
+		break;
+	}
+
+	case WM_CLOSE: {
 		ctwin->shouldClose = TRUE;
 		return TRUE;
 	}
 
-	if (message == CT_WINDOW_CLOSEMESSAGE) {
+	case CT_WINDOW_CLOSEMESSAGE: {
 		UnregisterClassA(ctwin->wndClassName, NULL);
 		CTLockDestroy(ctwin->lock);
 		CTGFXFree(ctwin);
 
 		message = WM_CLOSE;
-
 		goto __CTWinProcEnd;
 	}
-
-	if (message == WM_ERASEBKGND) {
+	
+	case WM_ERASEBKGND: {
 		return TRUE;
 	}
 
-	if (message == WM_PAINT) {
-
+	case WM_PAINT: {
 		if (ctwin == NULL) {
 			CTErrorSetFunction("__HCTWindowProc failed because GWLP_USERDATA was overwritten or corrupted.");
 			goto __CTWinProcEnd;
@@ -57,13 +95,13 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		PCTFB frameBuffer = ctwin->frameBuffer;
 
 		BITMAP rbBitmap;
-		rbBitmap.bmType			= 0;
-		rbBitmap.bmWidth		= frameBuffer->width;
-		rbBitmap.bmHeight		= frameBuffer->height;
-		rbBitmap.bmWidthBytes	= frameBuffer->width * sizeof(CTColor);
-		rbBitmap.bmPlanes		= 1;
-		rbBitmap.bmBitsPixel	= 32;
-		rbBitmap.bmBits			= frameBuffer->color;
+		rbBitmap.bmType = 0;
+		rbBitmap.bmWidth = frameBuffer->width;
+		rbBitmap.bmHeight = frameBuffer->height;
+		rbBitmap.bmWidthBytes = frameBuffer->width * sizeof(CTColor);
+		rbBitmap.bmPlanes = 1;
+		rbBitmap.bmBitsPixel = 32;
+		rbBitmap.bmBits = frameBuffer->color;
 
 		HBITMAP hBitMap = CreateBitmapIndirect(&rbBitmap);
 
@@ -79,15 +117,15 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 
 		RECT drawRect;
 		GetClientRect(ctwin->hwnd, &drawRect);
-		DWORD drawAreaWidth		= drawRect.right - drawRect.left;
-		DWORD drawAreaHeight	= drawRect.bottom - drawRect.top;
+		DWORD drawAreaWidth = drawRect.right - drawRect.left;
+		DWORD drawAreaHeight = drawRect.bottom - drawRect.top;
 
 		BOOL drawResult = AlphaBlend(
 			paintDC, 0, 0,
-			drawAreaWidth, 
+			drawAreaWidth,
 			drawAreaHeight,
-			bitmapDC, 0, 0, 
-			frameBuffer->width, 
+			bitmapDC, 0, 0,
+			frameBuffer->width,
 			frameBuffer->height,
 			blendFunc
 		);
@@ -98,15 +136,31 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		EndPaint(ctwin->hwnd, &paintObj);
 
 		CTWindowUnlock(ctwin);
+
+		break;
+	}
+
+	default:
+		break;
 	}
 
 __CTWinProcEnd:
 	return DefWindowProcA(window, message, wParam, lParam);
 }
 
-CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height) {
+CTCALL	PCTWin	CTWindowCreate(DWORD type, PCHAR title, UINT32 width, UINT32 height) {
 
-	PCTWin window = CTGFXAlloc(sizeof(*window));
+	if (
+		type != CT_WINDOW_FULLMENU &&
+		type != CT_WINDOW_MINMENU  &&
+		type != CT_WINDOW_SPLASH
+		) {
+		CTErrorSetParamValue("CTWindowCreate failed: unknown window type");
+		return NULL;
+	}
+
+	PCTWin window		= CTGFXAlloc(sizeof(*window));
+	window->type		= type;
 	window->frameBuffer = NULL;
 	window->lock		= CTLockCreate();
 	window->shouldClose	= FALSE;
@@ -120,23 +174,14 @@ CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height) {
 
 	WNDCLASSA windowClass;
 	ZeroMemory(&windowClass, sizeof(windowClass));
-	windowClass.lpszClassName = window->wndClassName;
-	windowClass.lpfnWndProc = __HCTWindowProc;
+	windowClass.lpszClassName	= window->wndClassName;
+	windowClass.lpfnWndProc		= __HCTWindowProc;
 
 	ATOM classRegRslt = RegisterClassA(&windowClass);
 	if (classRegRslt == NULL) {
 		CTErrorSetFunction("CTWindowCreated failed: RegisterClassA failed");
 		return NULL;
 	}
-
-	RECT clientRect = {
-		.bottom = height,
-		.top = 0,
-		.left = 0,
-		.right = width
-	};
-
-	AdjustWindowRect(&clientRect, CT_WINDOW_STYLE, TRUE);
 
 	window->hwnd = CreateWindowExA(
 		NULL,
@@ -145,20 +190,22 @@ CTCALL	PCTWin	CTWindowCreate(PCHAR title, UINT32 width, UINT32 height) {
 		0,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		clientRect.right - clientRect.left,
-		clientRect.bottom - clientRect.top,
+		0,
+		0,
 		NULL,
 		NULL,
 		NULL,
 		window
 	);
 
+	CTWindowSetSize(window, width, height);
+
 	if (window->hwnd == NULL) {
 		CTErrorSetFunction("CTWindowCreated failed: CreateWindowExA failed");
 		return NULL;
 	}
 
-	SetWindowLongA(window->hwnd, GWL_STYLE, CT_WINDOW_STYLE);
+	SetWindowLongA(window->hwnd, GWL_STYLE, type);
 
 	return window;
 }
@@ -204,13 +251,22 @@ CTCALL	BOOL	CTWindowSetSize(PCTWin window, UINT32 width, UINT height) {
 	}
 
 	CTWindowLock(window);
+
+	POINT windowDimensions = __HCTCalculateWindowSize(
+		window,
+		width,
+		height
+	);
+
 	BOOL rslt = SetWindowPos(
 		window->hwnd, 
 		NULL, 
 		0, 0, 
-		width, height, 
+		windowDimensions.x,
+		windowDimensions.y,
 		SWP_NOMOVE
 	);
+
 	if (rslt == FALSE) {
 		CTErrorSetFunction("CTWindowSetSize failed: SetWindowPos failed");
 	}
