@@ -40,11 +40,11 @@ static void __HCTProcessAndDrawPixel(
 	///		if (should discard pixel)
 	///			return
 	/// 
-	/// if (point is out of bounds again)
-	///		return
-	/// 
-	/// if (depth test failed again)
-	///		return
+	/// if (pixelShader has changed screencoord)
+	///		if (point is out of bounds again)
+	///			return
+	///		if (depth test failed again)
+	///			return
 	/// 
 	/// get below color
 	/// generate blended color
@@ -93,13 +93,17 @@ static void __HCTProcessAndDrawPixel(
 
 	}
 
-	if (pixel.screenCoord.x >= drawInfo->frameBuffer->width ||
-		pixel.screenCoord.y >= drawInfo->frameBuffer->height ||
-		pixel.screenCoord.x < 0 ||
-		pixel.screenCoord.y < 0) return;
+	if (screenCoord.x != pixel.screenCoord.x || screenCoord.y != pixel.screenCoord.y) {
 
-	if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE &&
-		drawInfo->shader->depthTest == TRUE) return;
+		if (pixel.screenCoord.x >= drawInfo->frameBuffer->width ||
+			pixel.screenCoord.y >= drawInfo->frameBuffer->height ||
+			pixel.screenCoord.x < 0 ||
+			pixel.screenCoord.y < 0) return;
+
+		if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE &&
+			drawInfo->shader->depthTest == TRUE) return;
+
+	}
 
 	CTColor newColor = CTColorBlend(belowColor, pixel.color);
 	CTFrameBufferSet(
