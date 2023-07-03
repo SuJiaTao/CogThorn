@@ -52,6 +52,7 @@ CTCALL	CTMatrix	CTMatrixScale(CTMatrix mat, CTVect scl);
 CTCALL	CTMatrix	CTMatrixTranslate(CTMatrix mat, CTVect trl);
 CTCALL	CTMatrix	CTMatrixRotate(CTMatrix mat, FLOAT rotation);
 CTCALL	CTVect		CTMatrixApply(CTMatrix mat, CTVect vect);
+CTCALL	CTMatrix	CTMatrixTransform(CTMatrix mat, CTVect trl, CTVect scl, FLOAT rot);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
