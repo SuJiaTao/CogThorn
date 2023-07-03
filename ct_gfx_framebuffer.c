@@ -56,7 +56,7 @@ CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT d
 
 	CTLockEnter(fb->lock);
 
-	UINT32 index		= pt.x + (pt.y * fb->width);
+	UINT32 index		= pt.x + ((fb->height - pt.y - 1) * fb->width);
 	fb->color[index]	= col;
 	fb->depth[index]	= depth;
 
@@ -75,7 +75,7 @@ CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
 		return FALSE;
 	}
 
-	UINT32 index = pt.x + (pt.y * fb->width);
+	UINT32 index = pt.x + ((fb->height - pt.y - 1) * fb->width);
 
 	CTLockEnter(fb->lock);
 	BOOL depthTest = fb->depth[index] > depth;
@@ -96,7 +96,7 @@ CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOA
 
 	CTLockEnter(fb->lock);
 
-	UINT32 index = pt.x + (pt.y * fb->width);
+	UINT32 index = pt.x + ((fb->height - pt.y - 1) * fb->width);
 
 	if (pCol != NULL)
 		*pCol = fb->color[index];
