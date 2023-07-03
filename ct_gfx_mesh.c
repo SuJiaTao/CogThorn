@@ -30,7 +30,7 @@ CTCALL	PCTMesh		CTMeshCreate(PFLOAT verts, PFLOAT uvs, UINT32 primCount) {
 	for (UINT32 primID = 0; primID < primCount; primID++) {
 
 		UINT32 compXIndex = (primID * 2) + 0;
-		UINT32 compYIndex = (primID * 2) + 0;
+		UINT32 compYIndex = (primID * 2) + 1;
 
 		rMesh->primList[primID].vertex.x	= verts[compXIndex];
 		rMesh->primList[primID].vertex.y	= verts[compYIndex];

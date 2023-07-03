@@ -67,6 +67,9 @@ CTCALL	FLOAT	CTVectMagnitudeFast(CTVect vect) {
 
 	// refer to <https://youtu.be/NWBEA2ECX-A> for details
 
+	vect.x = fabsf(vect.x);
+	vect.y = fabsf(vect.y);
+
 	FLOAT min, max;
 
 	if (vect.x > vect.y) {
