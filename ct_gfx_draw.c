@@ -356,7 +356,41 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 	
 }
 
-static UINT32 __HCTDrawTriangleTop(UINT32 startPixID, PCTPrimitive prims, P__CTDrawInfo drawInfo) {
+static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
+
+	const CTVect vert = CTVectCreate(px, py);
+
+	// implementation from SuJiaTao/Caesium on github
+
+	CTVect p1 = verts[0].vertex;
+	CTVect p2 = verts[1].vertex;
+	CTVect p3 = verts[2].vertex;
+
+	FLOAT invDenom =
+		1.0f / ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+
+	FLOAT dv3x = vert.x - p3.x;
+	FLOAT dv3y = vert.y - p3.y;
+
+	FLOAT weight1 = ((p2.y - p3.y) * (dv3x)+(p3.x - p2.x) * (dv3y)) * invDenom;
+	FLOAT weight2 = ((p3.y - p1.y) * (dv3x)+(p1.x - p3.x) * (dv3y)) * invDenom;
+	FLOAT weight3 = 1 - weight1 - weight2;
+
+	CTVect UV = {
+		.x = verts[0].UV.x * weight1 + verts[1].UV.x * weight2 + verts[2].UV.x * weight3,
+		.y = verts[0].UV.y * weight1 + verts[1].UV.y * weight2 + verts[2].UV.y * weight3,
+	};
+
+	return UV;
+
+}
+
+static UINT32 __HCTDrawTriangleTop(
+	UINT32 startPixID, 
+	PCTPrimitive prims, 
+	PCTPrimitive oldPrims, 
+	P__CTDrawInfo drawInfo
+) {
 
 	const FLOAT invSlopep2p1 =
 		(prims[1].vertex.x - prims[0].vertex.x) /
@@ -399,6 +433,14 @@ static UINT32 __HCTDrawTriangleTop(UINT32 startPixID, PCTPrimitive prims, P__CTD
 			);
 
 		for (INT32 drawX = DRAW_X_START; drawX <= DRAW_X_END; drawX++) {
+
+			CTVect UV = 
+				__HCTInterpolateUV(
+					oldPrims,
+					drawX,
+					drawY
+				);
+
 			__HCTDrawPoint(
 				drawInfo,
 				pixID,
@@ -406,14 +448,12 @@ static UINT32 __HCTDrawTriangleTop(UINT32 startPixID, PCTPrimitive prims, P__CTD
 					drawX,
 					drawY
 				),
-				CTVectCreate(
-					0,
-					0
-				),
+				UV,
 				1
 			);
 			
 			pixID++;
+
 		}
 
 	}
@@ -421,7 +461,12 @@ static UINT32 __HCTDrawTriangleTop(UINT32 startPixID, PCTPrimitive prims, P__CTD
 	return pixID;
 }
 
-static UINT32 __HCTDrawTriangleBottom(UINT32 startPixID, PCTPrimitive prims, P__CTDrawInfo drawInfo) {
+static UINT32 __HCTDrawTriangleBottom(
+	UINT32 startPixID, 
+	PCTPrimitive prims, 
+	PCTPrimitive oldPrims,
+	P__CTDrawInfo drawInfo
+) {
 
 	const FLOAT invSlopep3p2 =
 		(prims[2].vertex.x - prims[1].vertex.x) /
@@ -464,6 +509,14 @@ static UINT32 __HCTDrawTriangleBottom(UINT32 startPixID, PCTPrimitive prims, P__
 			);
 
 		for (INT32 drawX = DRAW_X_START; drawX <= DRAW_X_END; drawX++) {
+
+			CTVect UV =
+				__HCTInterpolateUV(
+					oldPrims,
+					drawX,
+					drawY
+				);
+
 			__HCTDrawPoint(
 				drawInfo,
 				pixID,
@@ -471,14 +524,12 @@ static UINT32 __HCTDrawTriangleBottom(UINT32 startPixID, PCTPrimitive prims, P__
 					drawX,
 					drawY
 				),
-				CTVectCreate(
-					0,
-					0
-				),
+				UV,
 				1
 			);
 
 			pixID++;
+
 		}
 
 	}
@@ -523,22 +574,28 @@ static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3,
 		.vertex.y = p2->vertex.y,
 	};
 
-	CTPrimitive primList[] = {
+	CTPrimitive originalPrims[] = {
+		*p1,
+		*p2,
+		*p3
+	};
+
+	CTPrimitive tessPrims[] = {
 		*p1,
 		*p2,
 		*p3,
 		p4
 	};
 
-	if (primList[1].vertex.x > primList[3].vertex.x) {
-		CTVect temp = primList[3].vertex;
-		primList[3].vertex = primList[1].vertex;
-		primList[1].vertex = temp;
+	if (tessPrims[1].vertex.x > tessPrims[3].vertex.x) {
+		CTVect temp = tessPrims[3].vertex;
+		tessPrims[3].vertex = tessPrims[1].vertex;
+		tessPrims[1].vertex = temp;
 	}
 
 	UINT32 lastPixID = 0;
-	lastPixID = __HCTDrawTriangleTop(lastPixID, primList, drawInfo);
-	lastPixID = __HCTDrawTriangleBottom(lastPixID, primList, drawInfo);
+	lastPixID = __HCTDrawTriangleTop(lastPixID, tessPrims, originalPrims, drawInfo);
+	lastPixID = __HCTDrawTriangleBottom(lastPixID, tessPrims, originalPrims, drawInfo);
 }
 
 CTCALL	BOOL		CTDraw(
