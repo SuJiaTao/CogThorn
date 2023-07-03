@@ -356,7 +356,7 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 	
 }
 
-static void __HCTDrawTriangleTop(PUINT32 pixID, PCTPrimitive prims, P__CTDrawInfo drawInfo) {
+static UINT32 __HCTDrawTriangleTop(UINT32 startPixID, PCTPrimitive prims, P__CTDrawInfo drawInfo) {
 
 	const FLOAT invSlopep2p1 =
 		(prims[1].vertex.x - prims[0].vertex.x) /
@@ -366,6 +366,124 @@ static void __HCTDrawTriangleTop(PUINT32 pixID, PCTPrimitive prims, P__CTDrawInf
 		(prims[3].vertex.x - prims[0].vertex.x) /
 		(prims[3].vertex.y - prims[0].vertex.y);
 
+	const INT32 DRAW_Y_START = 
+		max(
+			prims[1].vertex.y,
+			0
+		);
+	const INT32 DRAW_Y_END =
+		min(
+			prims[0].vertex.y,
+			drawInfo->frameBuffer->height - 1
+		);
+
+	UINT32 pixID = startPixID;
+
+	for (INT32 drawY = DRAW_Y_START; drawY <= DRAW_Y_END; drawY++) {
+
+		const FLOAT Y_DISTANCE_WALKED = 
+			max(
+				drawY - prims[1].vertex.y,
+				0
+			);
+
+		const INT32 DRAW_X_START = 
+			max(
+				prims[1].vertex.x + (invSlopep2p1) * Y_DISTANCE_WALKED,
+				0
+			);
+		const INT32 DRAW_X_END = 
+			min(
+				prims[3].vertex.x + (invSlopep4p1) * Y_DISTANCE_WALKED,
+				drawInfo->frameBuffer->width - 1	
+			);
+
+		for (INT32 drawX = DRAW_X_START; drawX <= DRAW_X_END; drawX++) {
+			__HCTDrawPoint(
+				drawInfo,
+				pixID,
+				CTPointCreate(
+					drawX,
+					drawY
+				),
+				CTVectCreate(
+					0,
+					0
+				),
+				1
+			);
+			
+			pixID++;
+		}
+
+	}
+
+	return pixID;
+}
+
+static UINT32 __HCTDrawTriangleBottom(UINT32 startPixID, PCTPrimitive prims, P__CTDrawInfo drawInfo) {
+
+	const FLOAT invSlopep3p2 =
+		(prims[2].vertex.x - prims[1].vertex.x) /
+		(prims[2].vertex.y - prims[1].vertex.y);
+
+	const FLOAT invSlopep3p4 =
+		(prims[2].vertex.x - prims[3].vertex.x) /
+		(prims[2].vertex.y - prims[3].vertex.y);
+
+	const INT32 DRAW_Y_START =
+		max(
+			prims[2].vertex.y,
+			0
+		);
+	const INT32 DRAW_Y_END =
+		min(
+			prims[1].vertex.y,
+			drawInfo->frameBuffer->height - 1
+		);
+
+	UINT32 pixID = startPixID;
+
+	for (INT32 drawY = DRAW_Y_START; drawY <= DRAW_Y_END; drawY++) {
+
+		const FLOAT Y_DISTANCE_WALKED =
+			max(
+				drawY - prims[2].vertex.y,
+				0
+			);
+
+		const INT32 DRAW_X_START =
+			max(
+				prims[2].vertex.x + (invSlopep3p2) * Y_DISTANCE_WALKED,
+				0
+			);
+		const INT32 DRAW_X_END =
+			min(
+				prims[2].vertex.x + (invSlopep3p4) * Y_DISTANCE_WALKED,
+				drawInfo->frameBuffer->width - 1
+			);
+
+		for (INT32 drawX = DRAW_X_START; drawX <= DRAW_X_END; drawX++) {
+			__HCTDrawPoint(
+				drawInfo,
+				pixID,
+				CTPointCreate(
+					drawX,
+					drawY
+				),
+				CTVectCreate(
+					0,
+					0
+				),
+				1
+			);
+
+			pixID++;
+		}
+
+	}
+
+	return pixID;
 }
 
 static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3, P__CTDrawInfo drawInfo) {
@@ -373,6 +491,8 @@ static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3,
 	/// SUMMARY:
 	/// sort primitives by height (p1 highest, p3 lowest)
 	/// create p4 which splits traingle into 2, both with flat bases
+	/// create list of all 4 verticies
+	/// ensure p2 is left and p4 is right (swap if needed)
 	/// draw top triangle (p2 p1 p4)
 	/// draw bottom triangle (p3 p2 p4)
 
@@ -410,9 +530,15 @@ static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3,
 		p4
 	};
 
-	UINT32 pixID = 0;
+	if (primList[1].vertex.x > primList[3].vertex.x) {
+		CTVect temp = primList[3].vertex;
+		primList[3].vertex = primList[1].vertex;
+		primList[1].vertex = temp;
+	}
 
-	__HCTDrawTriangleTop(&pixID, primList, drawInfo);
+	UINT32 lastPixID = 0;
+	lastPixID = __HCTDrawTriangleTop(lastPixID, primList, drawInfo);
+	lastPixID = __HCTDrawTriangleBottom(lastPixID, primList, drawInfo);
 }
 
 CTCALL	BOOL		CTDraw(
