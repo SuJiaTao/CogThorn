@@ -44,6 +44,7 @@ static POINT __HCTCalculateWindowSize(PCTWindow win, DWORD targetWidth, DWORD ta
 	};
 
 	return pt;
+
 }
 
 static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -74,7 +75,7 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 	}
 	
 	case WM_ERASEBKGND: {
-		return TRUE;
+		break;
 	}
 
 	case WM_PAINT: {
@@ -115,20 +116,67 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		blendFunc.SourceConstantAlpha = 255;
 		blendFunc.BlendFlags = NULL;
 
-		RECT drawRect;
-		GetClientRect(ctwin->hwnd, &drawRect);
-		DWORD drawAreaWidth = drawRect.right - drawRect.left;
-		DWORD drawAreaHeight = drawRect.bottom - drawRect.top;
+		RECT clientRect;
+		GetClientRect(ctwin->hwnd, &clientRect);
+		DWORD winWidth = clientRect.right - clientRect.left;
+		DWORD winHeight = clientRect.bottom - clientRect.top;
+
+		FLOAT scale = min(
+			(FLOAT)winWidth / (FLOAT)frameBuffer->width,
+			(FLOAT)winHeight / (FLOAT)frameBuffer->height
+		);
+
+		DWORD fbDrawWidth	= (DWORD)((FLOAT)frameBuffer->width * scale);
+		DWORD fbDrawHeight	= (DWORD)((FLOAT)frameBuffer->height * scale);
+
+		DWORD fbOffsetX = (winWidth  - fbDrawWidth)  / 2;
+		DWORD fbOffsetY = (winHeight - fbDrawHeight) / 2;
 
 		BOOL drawResult = AlphaBlend(
-			paintDC, 0, 0,
-			drawAreaWidth,
-			drawAreaHeight,
+			paintDC, 
+			fbOffsetX,
+			fbOffsetY,
+			fbDrawWidth,
+			fbDrawHeight,
 			bitmapDC, 0, 0,
 			frameBuffer->width,
 			frameBuffer->height,
 			blendFunc
 		);
+
+		HBRUSH borderBrush = CreateSolidBrush(RGB(0, 0, 0));
+
+		RECT topBorder = {
+			.bottom = 0,
+			.top	= fbOffsetY,
+			.left	= 0,
+			.right	= winWidth
+		};
+		RECT bottomBorder = {
+			.bottom = winHeight - fbOffsetY,
+			.top	= winHeight,
+			.left	= 0,
+			.right	= winWidth
+		};
+		RECT leftBorder = {
+			.bottom = 0,
+			.top	= winHeight,
+			.left	= 0,
+			.right	= fbOffsetX
+		};
+		RECT rightBorder = {
+			.bottom = 0,
+			.top	= winHeight,
+			.left	= winWidth - fbOffsetX,
+			.right	= winWidth
+		};
+
+		FillRect(paintDC, &topBorder, borderBrush);
+		FillRect(paintDC, &bottomBorder, borderBrush);
+		FillRect(paintDC, &leftBorder, borderBrush);
+		FillRect(paintDC, &rightBorder, borderBrush);
+
+		DeleteObject(borderBrush);
 
 		DeleteObject(hBitMap);
 		DeleteObject(bitmapDC);
@@ -146,6 +194,7 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 
 __CTWinProcEnd:
 	return DefWindowProcA(window, message, wParam, lParam);
+
 }
 
 CTCALL	PCTWin	CTWindowCreate(DWORD type, PCHAR title, UINT32 width, UINT32 height) {
