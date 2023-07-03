@@ -8,6 +8,8 @@
 
 #include "ct_gfx.h"
 
+#include <stdio.h>
+
 typedef struct __CTDrawInfo {
 	PCTFB		frameBuffer;
 	PCTShader	shader;
@@ -401,7 +403,9 @@ static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3,
 		p4
 	};
 
-	__HCTDrawPoints(primList, 4, &drawInfo);
+	for (int i = 0; i < 4; i++) {
+		__HCTDrawPoint(drawInfo, i, CTPointFromVector(primList[i].vertex), primList[i].vertex, 4);
+	}
 }
 
 CTCALL	BOOL		CTDraw(
@@ -517,6 +521,7 @@ CTCALL	BOOL		CTDraw(
 				&drawInfo
 			);
 		}
+
 		break;
 
 	case CT_DRAW_METHOD_FILL:

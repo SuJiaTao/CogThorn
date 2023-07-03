@@ -71,10 +71,10 @@ CTCALL	CTMatrix	CTMatrixRotate(CTMatrix mat, FLOAT rotation) {
 	FLOAT cosine	= cosf(rotation * CT_DEGREES_TO_RADIANS);
 	FLOAT sine		= sinf(rotation * CT_DEGREES_TO_RADIANS);
 
-	__HCTMatrixSet(&mulMat, cosine,  0, 0);
-	__HCTMatrixSet(&mulMat, -sine,   1, 0);
-	__HCTMatrixSet(&mulMat, sine,    0, 1);
-	__HCTMatrixSet(&mulMat, -cosine, 1, 1);
+	__HCTMatrixSet(&mulMat, cosine, 0, 0);
+	__HCTMatrixSet(&mulMat, -sine,  1, 0);
+	__HCTMatrixSet(&mulMat, sine,   0, 1);
+	__HCTMatrixSet(&mulMat, cosine, 1, 1);
 
 	return CTMatrixMultiply(mat, mulMat);
 }
