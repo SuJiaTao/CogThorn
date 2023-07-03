@@ -140,7 +140,7 @@ static void __HCTDrawPoint(
 
 			__HCTProcessAndDrawPixel(
 				drawInfo,
-				pixID,
+				pixID++,
 				CTPointAdd(
 					screenCoord,
 					CTPointCreate(i, 2)
@@ -150,7 +150,7 @@ static void __HCTDrawPoint(
 
 			__HCTProcessAndDrawPixel(
 				drawInfo,
-				pixID,
+				pixID++,
 				CTPointAdd(
 					screenCoord,
 					CTPointCreate(i, -2)
@@ -160,7 +160,7 @@ static void __HCTDrawPoint(
 
 			__HCTProcessAndDrawPixel(
 				drawInfo,
-				pixID,
+				pixID++,
 				CTPointAdd(
 					screenCoord,
 					CTPointCreate(2, i)
@@ -170,7 +170,7 @@ static void __HCTDrawPoint(
 
 			__HCTProcessAndDrawPixel(
 				drawInfo,
-				pixID,
+				pixID++,
 				CTPointAdd(
 					screenCoord,
 					CTPointCreate(-2, i)
@@ -185,7 +185,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(-1, -1)
@@ -195,7 +195,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(-1,  1)
@@ -205,7 +205,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate( 1, 1)
@@ -215,7 +215,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(1, -1)
@@ -227,7 +227,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(-1, 0)
@@ -237,7 +237,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(0, 1)
@@ -247,7 +247,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(1, 0)
@@ -257,7 +257,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			CTPointAdd(
 				screenCoord,
 				CTPointCreate(0, -1)
@@ -269,7 +269,7 @@ static void __HCTDrawPoint(
 
 		__HCTProcessAndDrawPixel(
 			drawInfo,
-			pixID,
+			pixID++,
 			screenCoord,
 			UV
 		);
@@ -278,6 +278,24 @@ static void __HCTDrawPoint(
 		break;
 	}
 
+}
+
+static UINT32 __HCTRealPixelsPerPointSize(UINT32 pointSize) {
+
+	switch (pointSize) {
+
+	case 1:
+		return 1;
+	case 2:
+		return 5;
+	case 3:
+		return 9;
+	case 4:
+		return 21;
+
+	}
+
+	return 1;
 }
 
 static void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawInfo drawInfo) {
@@ -292,7 +310,7 @@ static void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawIn
 
 		__HCTDrawPoint(
 			drawInfo,
-			pixID,
+			pixID * __HCTRealPixelsPerPointSize(drawInfo->shader->pointSizePixels),
 			pixPt,
 			primList[pixID].UV,
 			drawInfo->shader->pointSizePixels
@@ -320,7 +338,7 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 
 		__HCTDrawPoint(
 			drawInfo,
-			pixID,
+			pixID * __HCTRealPixelsPerPointSize(drawInfo->shader->lineSizePixels),
 			CTPointCreate(
 				drawX,
 				drawY
