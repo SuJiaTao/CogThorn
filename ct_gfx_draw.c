@@ -631,7 +631,7 @@ CTCALL	BOOL		CTDraw(
 	/// loop(all primitives in copy)
 	///		if (primitive shader != NULL)
 	///			process primitive with shader
-	///		update primitive so that it is centered in screenspace
+	///		update primitive so that [-1,1] scales to screenspace width
 	/// 
 	/// setup drawInfo object
 	/// 
@@ -682,8 +682,10 @@ CTCALL	BOOL		CTDraw(
 			);
 		}
 
-		prim->vertex.x += (frameBuffer->width  >> 1);
-		prim->vertex.y += (frameBuffer->height >> 1);
+		prim->vertex.x *= (FLOAT)(frameBuffer->width  >> 1);
+		prim->vertex.y *= (FLOAT)(frameBuffer->width  >> 1);
+		prim->vertex.x += (FLOAT)(frameBuffer->width  >> 1);
+		prim->vertex.y += (FLOAT)(frameBuffer->height >> 1);
 	}
 
 	__CTDrawInfo drawInfo = {
