@@ -315,6 +315,7 @@ static void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawIn
 			primList[pixID].UV,
 			drawInfo->shader->pointSizePixels
 		);
+
 	}
 
 }
@@ -323,13 +324,14 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 	
 	FLOAT dx = prim2->vertex.x - prim1->vertex.x;
 	FLOAT dy = prim2->vertex.y - prim1->vertex.y;
-	FLOAT dt = CTVectMagnitudeFast(CTVectCreate(dx, dy));
+	const FLOAT dt = CTVectMagnitudeFast(CTVectCreate(dx, dy));
 
 	dx /= dt;
 	dy /= dt;
 
 	FLOAT drawX = prim1->vertex.x;
 	FLOAT drawY = prim1->vertex.y;
+
 	for (UINT32 pixID = 0; pixID < dt; pixID++) {
 
 		FLOAT uvFactor	= (FLOAT)pixID / dt;
@@ -352,8 +354,54 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 
 		drawX += dx;
 		drawY += dy;
+
 	}
 	
+}
+
+static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3, P__CTDrawInfo drawInfo) {
+
+	/// SUMMARY:
+	/// sort primitives by height (p1 highest, p3 lowest)
+	/// create p4 which splits traingle into 2, both with flat bases
+	/// draw top triangle (p2 p1 p4)
+	/// draw bottom triangle (p3 p2 p4)
+
+	if (p2->vertex.y > p1->vertex.y) {
+		PCTPrimitive temp = p1;
+		p1 = p2;
+		p2 = temp;
+	}
+
+	if (p3->vertex.y > p1->vertex.y) {
+		PCTPrimitive temp = p1;
+		p1 = p3;
+		p3 = temp;
+	}
+
+	if (p2->vertex.y > p3->vertex.y) {
+		PCTPrimitive temp = p3;
+		p3 = p2;
+		p2 = temp;
+	}
+
+	const FLOAT invSlopep3p1 = 
+		(p1->vertex.x - p3->vertex.x) /
+		(p1->vertex.y - p3->vertex.y);
+
+	CTPrimitive p4 = {
+		.vertex.x = p3->vertex.x + (invSlopep3p1 * (p2->vertex.y - p3->vertex.y)),
+		.vertex.y = p2->vertex.y,
+	};
+
+	CTPrimitive primList[] = {
+		*p1,
+		*p2,
+		*p3,
+		p4
+	};
+
+	__HCTDrawPoints(primList, 4, &drawInfo);
 }
 
 CTCALL	BOOL		CTDraw(
@@ -448,10 +496,12 @@ CTCALL	BOOL		CTDraw(
 	switch (drawMethod)
 	{
 	case CT_DRAW_METHOD_POINTS:
+
 		__HCTDrawPoints(processedPrimList, mesh->primCount, &drawInfo);
 		break;
 
 	case CT_DRAW_METHOD_LINES_CLOSED:
+
 		__HCTDrawLine(
 			processedPrimList + 0,
 			processedPrimList + mesh->primCount - 1,
@@ -459,6 +509,7 @@ CTCALL	BOOL		CTDraw(
 		);
 
 	case CT_DRAW_METHOD_LINES_OPEN:
+
 		for (UINT32 primIndex = 0; primIndex < mesh->primCount - 1; primIndex++) {
 			__HCTDrawLine(
 				processedPrimList + primIndex + 0,
@@ -469,15 +520,39 @@ CTCALL	BOOL		CTDraw(
 		break;
 
 	case CT_DRAW_METHOD_FILL:
+
+		if (mesh->primCount <= 2) {
+			CTErrorSetFunction("CTDraw failed: cannot draw a filled polygon with only 2 verticies");
+			goto DrawFuncFailure;
+		}
+
+		for (UINT32 primIndex = 0; primIndex < mesh->primCount - 2; primIndex++) {
+			__HCTDrawTriangle(
+				processedPrimList + 0,
+				processedPrimList + primIndex + 1,
+				processedPrimList + primIndex + 2,
+				&drawInfo
+			);
+		}
+
 		break;
 
 	default:
+
 		CTErrorSetParamValue("CTDraw failed: invalid draw method");
-		return FALSE;
+		goto DrawFuncFailure;
+
 	}
+
+DrawFuncSucess:
 
 	CTGFXFree(shaderInputCopy);
 	CTGFXFree(processedPrimList);
-
 	return TRUE;
+
+DrawFuncFailure:
+
+	CTGFXFree(shaderInputCopy);
+	CTGFXFree(processedPrimList);
+	return FALSE;
 }
