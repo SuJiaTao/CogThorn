@@ -84,8 +84,6 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 			goto __CTWinProcEnd;
 		}
 
-		CTWindowLock(ctwin);
-
 		if (ctwin->frameBuffer == NULL) {
 			goto __CTWinProcEnd;
 		}
@@ -182,8 +180,6 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		DeleteObject(bitmapDC);
 
 		EndPaint(ctwin->hwnd, &paintObj);
-
-		CTWindowUnlock(ctwin);
 
 		break;
 	}
