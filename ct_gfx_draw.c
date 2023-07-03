@@ -8,9 +8,8 @@
 
 #include "ct_gfx.h"
 
-#include <stdio.h>
-
 typedef struct __CTDrawInfo {
+	UINT32		drawMethod;
 	PCTFB		frameBuffer;
 	PCTShader	shader;
 	PVOID		shaderInput;
@@ -59,6 +58,7 @@ static void __HCTProcessAndDrawPixel(
 		drawInfo->shader->depthTest == TRUE) return;
 
 	CTPixCtx pixCtx = {
+		.drawMethod		= drawInfo->drawMethod,
 		.frameBuffer	= drawInfo->frameBuffer,
 		.pixID			= pixID,
 		.UV				= UV
@@ -668,14 +668,15 @@ CTCALL	BOOL		CTDraw(
 
 		PCTPrimitive prim = processedPrimList + primID;
 
-		CTPrimCtx primtCtx = {
-			.primID = primID,
-			.mesh	= mesh
+		CTPrimCtx primCtx = {
+			.drawMethod	= drawMethod,
+			.primID		= primID,
+			.mesh		= mesh
 		};
 
 		if (shader->primitiveShader != NULL) {
 			shader->primitiveShader(
-				primtCtx,
+				primCtx,
 				prim,
 				shaderInputCopy
 			);
@@ -686,6 +687,7 @@ CTCALL	BOOL		CTDraw(
 	}
 
 	__CTDrawInfo drawInfo = {
+		.drawMethod		= drawMethod,
 		.depth			= depth,
 		.frameBuffer	= frameBuffer,
 		.shader			= shader,

@@ -107,11 +107,13 @@ typedef struct CTPixel {
 } CTPixel, *PCTPixel;
 
 typedef struct CTPrimitiveContext {
+	UINT32	drawMethod;
 	UINT32	primID;
 	PCTMesh	mesh;
 } CTPrimitiveContext, *PCTPrimitiveContext, CTPrimCtx, *PCTPrimCtx;
 
 typedef struct CTPixelContext {
+	UINT32	drawMethod;
 	UINT32	pixID;
 	PCTFB	frameBuffer;
 	CTVect	UV;
