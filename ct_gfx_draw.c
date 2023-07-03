@@ -392,6 +392,9 @@ static UINT32 __HCTDrawTriangleTop(
 	P__CTDrawInfo drawInfo
 ) {
 
+	if ((INT)prims[1].vertex.y - (INT)prims[0].vertex.y == 0)
+		return startPixID;
+
 	const FLOAT invSlopep2p1 =
 		(prims[1].vertex.x - prims[0].vertex.x) /
 		(prims[1].vertex.y - prims[0].vertex.y);
@@ -467,6 +470,9 @@ static UINT32 __HCTDrawTriangleBottom(
 	PCTPrimitive oldPrims,
 	P__CTDrawInfo drawInfo
 ) {
+
+	if ((INT)prims[2].vertex.y - (INT)prims[1].vertex.y == 0)
+		return startPixID;
 
 	const FLOAT invSlopep3p2 =
 		(prims[2].vertex.x - prims[1].vertex.x) /
