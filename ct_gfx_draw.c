@@ -26,8 +26,6 @@ static void __HCTProcessAndDrawPixel(
 ) {
 
 	/// SUMMARY:
-	/// update point position so that (0, 0) is centered in screen
-	/// 
 	/// if (point is out of bounds)
 	///		return
 	/// 
@@ -51,9 +49,6 @@ static void __HCTProcessAndDrawPixel(
 	/// get below color
 	/// generate blended color
 	/// set frameBuffer pixel to blended color
-	
-	screenCoord.x += (drawInfo->frameBuffer->width)  >> 1;
-	screenCoord.y += (drawInfo->frameBuffer->height) >> 1;
 
 	if (screenCoord.x >= drawInfo->frameBuffer->width	||
 		screenCoord.y >= drawInfo->frameBuffer->height	||
@@ -361,6 +356,18 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 	
 }
 
+static void __HCTDrawTriangleTop(PUINT32 pixID, PCTPrimitive prims, P__CTDrawInfo drawInfo) {
+
+	const FLOAT invSlopep2p1 =
+		(prims[1].vertex.x - prims[0].vertex.x) /
+		(prims[1].vertex.y - prims[0].vertex.y);
+
+	const FLOAT invSlopep4p1 =
+		(prims[3].vertex.x - prims[0].vertex.x) /
+		(prims[3].vertex.y - prims[0].vertex.y);
+
+}
+
 static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3, P__CTDrawInfo drawInfo) {
 
 	/// SUMMARY:
@@ -381,10 +388,10 @@ static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3,
 		p3 = temp;
 	}
 
-	if (p2->vertex.y > p3->vertex.y) {
-		PCTPrimitive temp = p3;
-		p3 = p2;
-		p2 = temp;
+	if (p3->vertex.y > p2->vertex.y) {
+		PCTPrimitive temp = p2;
+		p2 = p3;
+		p3 = temp;
 	}
 
 	const FLOAT invSlopep3p1 = 
@@ -403,9 +410,9 @@ static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3,
 		p4
 	};
 
-	for (int i = 0; i < 4; i++) {
-		__HCTDrawPoint(drawInfo, i, CTPointFromVector(primList[i].vertex), primList[i].vertex, 4);
-	}
+	UINT32 pixID = 0;
+
+	__HCTDrawTriangleTop(&pixID, primList, drawInfo);
 }
 
 CTCALL	BOOL		CTDraw(
@@ -441,6 +448,7 @@ CTCALL	BOOL		CTDraw(
 	/// loop(all primitives in copy)
 	///		if (primitive shader != NULL)
 	///			process primitive with shader
+	///		update primitive so that it is centered in screenspace
 	/// 
 	/// setup drawInfo object
 	/// 
@@ -475,6 +483,8 @@ CTCALL	BOOL		CTDraw(
 
 	for (UINT32 primID = 0; primID < mesh->primCount; primID++) {
 
+		PCTPrimitive prim = processedPrimList + primID;
+
 		CTPrimCtx primtCtx = {
 			.primID = primID,
 			.mesh	= mesh
@@ -483,11 +493,13 @@ CTCALL	BOOL		CTDraw(
 		if (shader->primitiveShader != NULL) {
 			shader->primitiveShader(
 				primtCtx,
-				processedPrimList + primID,
+				prim,
 				shaderInputCopy
 			);
 		}
 
+		prim->vertex.x += (frameBuffer->width  >> 1);
+		prim->vertex.y += (frameBuffer->height >> 1);
 	}
 
 	__CTDrawInfo drawInfo = {
