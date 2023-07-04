@@ -132,7 +132,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			sprintf_s(
 				logFmtBuffer,
 				CT_LOGGING_MAX_WRITE_SIZE - 1,
-				"<%08d> ( %02dh : %02dm : %02ds : %03dms ) [ THREADID: %X ] [ %s ] \n\t%s\n",
+				"\n<%08d> ( %02dh : %02dm : %02ds : %03dms ) [ THREAD ID: %X ] [ %s ] \n%s\n",
 				(INT32)LOG_ENTRY->logNumber,
 				timeHours,
 				timeMins,
@@ -205,7 +205,7 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook,
 	sprintf_s(
 		fileHeaderFmtBuffer,
 		CT_LOGGING_MAX_WRITE_SIZE - 1,
-		"< %s >\n[ %dh : %dm : %ds : %dms ]\n",
+		"Filename: < %s >\nCreated at: [ %dh : %dm : %ds : %dms ]\n",
 		streamName,
 		streamInitTime.wHour,
 		streamInitTime.wMinute,
