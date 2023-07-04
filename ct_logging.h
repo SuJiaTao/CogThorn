@@ -18,7 +18,7 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_LOGGING_SLEEP_INTERVAL_MSECS		256
+#define CT_LOGGING_SLEEP_INTERVAL_MSECS		 32
 #define CT_LOGGING_MAX_WRITE_SIZE			512
 DWORD __stdcall __CTLoggingThreadProc(PVOID input);
 
@@ -59,7 +59,7 @@ CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_LOGGING_QUEUE_NODE_SIZE	0xFF
+#define CT_LOGGING_QUEUE_NODE_SIZE	1024
 typedef struct CTLogging {
 
 	INT64		startTimeMsecs;

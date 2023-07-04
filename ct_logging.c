@@ -15,40 +15,62 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 	/// SUMMARY:
 	/// loop (forever)
-	///		sleep to satisfy sleep interval
+	/// 
+	///		if (no queued elements)
+	///			sleep to satisfy sleep interval
+	/// 
 	///		record spin start time
 	///		
 	///		ENTER LOCK
 	///		
 	///		for (all queued log entries)
+	///			copy to write list
+	/// 
+	///		CLEAR QUEUE
+	///		
+	///		LEAVE LOCK
+	/// 
+	///		for (all in write list)
 	///			open specified file
 	///			format log
 	///			write to file
 	///			close file
-	///		CLEAR QUEUE
-	///		
-	///		LEAVE LOCK
 	///		
 	///		if (recieived kill signal)
 	///			terminate thread
 	/// 
 	///		record spin end time
 
-	INT64 SPIN_TIME_START = 0;
-	INT64 SPIN_TIME_END   = 0;
-	PCTLogEntry LOG_ENTRY = NULL;
+	INT64 SPIN_TIME_START	= 0;
+	INT64 SPIN_TIME_END		= 0;
+	PCTLogEntry LOG_ENTRY	= NULL;
+	PCTDynList logWriteBuffer	= CTDynListCreate(sizeof(CTLogEntry), CT_LOGGING_QUEUE_NODE_SIZE);
 
 	while (TRUE) {
 
 		INT64 SPIN_TIME_TOTAL = SPIN_TIME_END - SPIN_TIME_START;
-		Sleep(max(0, SPIN_TIME_TOTAL));
+
+		if (__ctlog->logWriteQueue->elementsUsedCount == 0) {
+			Sleep(max(0, CT_LOGGING_SLEEP_INTERVAL_MSECS - SPIN_TIME_TOTAL));
+		}
+
+		printf("spinning %d %d\n", __ctlog->logWriteQueue->elementsUsedCount, SPIN_TIME_TOTAL);
 
 		CTLockEnter(__ctlog->lock);
 		SPIN_TIME_START = GetTickCount64();
 
-		PCTIterator entryQueueIter = CTIteratorCreate(__ctlog->logWriteQueue);
+		PCTIterator logQueueIter = CTIteratorCreate(__ctlog->logWriteQueue);
+		while ((LOG_ENTRY = CTIteratorIterate(logQueueIter)) != NULL) {
+			PCTLogEntry entry = CTDynListAdd(logWriteBuffer);
+			*entry = *LOG_ENTRY;
+		}
+		CTIteratorDestroy(logQueueIter);
+		CTDynListClear(__ctlog->logWriteQueue);
 
-		while ( (LOG_ENTRY = CTIteratorIterate(entryQueueIter))  != NULL) {
+		CTLockLeave(__ctlog->lock);
+
+		PCTIterator writeBufferIter = CTIteratorCreate(logWriteBuffer);
+		while ( (LOG_ENTRY = CTIteratorIterate(writeBufferIter)) != NULL) {
 
 			PCTFile logFile			= CTFileOpen(LOG_ENTRY->logStream->streamName);
 			PCHAR	logFmtBuffer	= CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
@@ -109,14 +131,16 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 		}
 
-		CTIteratorDestroy(entryQueueIter);
-		CTDynListClear(__ctlog->logWriteQueue);
+		CTIteratorDestroy(writeBufferIter);
+		CTDynListClear(logWriteBuffer);
 
-		CTLockLeave(__ctlog->lock);
 		SPIN_TIME_END = GetTickCount64();
 
-		if (__ctlog->killSignal == TRUE)
+		if (__ctlog->killSignal == TRUE) {
+			CTDynListDestroy(logWriteBuffer);
 			ExitThread(ERROR_SUCCESS);
+		}
+			
 
 	}
 
