@@ -18,7 +18,14 @@ CTCALL	UINT32		CTRandomSeed(void) {
 }
 
 CTCALL	UINT32		CTRandomInt(UINT32 seed) {
-	// simple XORSHIFT
+
+	// two level XORSHIFT
+	seed ^= seed << 13;
+	seed ^= seed >> 17;
+	seed ^= seed << 5;
+
+	seed *= seed;
+
 	seed ^= seed << 13;
 	seed ^= seed >> 17;
 	seed ^= seed << 5;
