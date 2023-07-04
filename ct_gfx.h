@@ -12,6 +12,8 @@
 #include "ct_base.h"
 #include "ct_math.h"
 
+#include <math.h>
+
 //////////////////////////////////////////////////////////////////////////////
 ///
 ///								MEMORY
@@ -163,6 +165,77 @@ CTCALL	BOOL		CTDraw(
 	PVOID		shaderInput,
 	FLOAT		depth
 );
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								SHADER FUNCTIONS
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+#define CTS_SAMPLE_METHOD_CLAMP			0
+#define CTS_SAMPLE_METHOD_CLAMP_TO_EDGE	1
+#define CTS_SAMPLE_METHOD_REPEAT		2
+CTCALL __forceinline CTColor CTSSample(PCTFB texture, CTVect UV, UINT32 sampleMethod) {
+
+	CTColor retColor = {
+		.r = 0,
+		.g = 0,
+		.b = 0,
+		.a = 0
+	};
+
+	if (texture == NULL)
+		goto __CTSSampleComplete;
+
+	switch (sampleMethod)
+	{
+
+	case CTS_SAMPLE_METHOD_CLAMP_TO_EDGE:
+
+		UV.x = min(1.0f, max(UV.x, 0));
+		UV.y = min(1.0f, max(UV.y, 0));
+		break;
+
+	case CTS_SAMPLE_METHOD_CLAMP:
+
+		if (UV.x < 0.0f || UV.x > 1.0f || UV.y < 0.0f || UV.y > 1.0f)
+			goto __CTSSampleComplete;
+
+	case CTS_SAMPLE_METHOD_REPEAT:
+
+		UV.x = fmodf(UV.x, 1.0f);
+		UV.y = fmodf(UV.y, 1.0f);
+
+		if (UV.x < 0.0f)
+			UV.x += 1.0f;
+
+		if (UV.y < 0.0f)
+			UV.y += 1.0f;
+
+		break;
+
+	default:
+
+		goto __CTSSampleComplete;
+
+	}
+
+	UINT32 samplex = (UINT32)(UV.x * (FLOAT)(texture->width));
+	UINT32 sampley = (UINT32)(UV.y * (FLOAT)(texture->height));
+
+	CTFrameBufferGet(
+		texture,
+		CTPointCreate(
+			samplex,
+			sampley
+		),
+		&retColor,
+		NULL
+	);
+
+__CTSSampleComplete:
+	return retColor;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 ///
