@@ -10,6 +10,8 @@
 #include "ct_gfx.h"
 #include "ct_logging.h"
 
+#include <stdio.h>
+
 BOOL WINAPI DllMain(
     HINSTANCE hinstDLL,
     DWORD fdwReason, 
@@ -57,8 +59,11 @@ BOOL WINAPI DllMain(
         __ctlog->logWriteThread = CreateThread(
             NULL,
             NULL,
-
-        )
+            __CTLoggingThreadProc,
+            NULL,
+            NULL,
+            NULL
+        );
 
         break;
 
@@ -68,6 +73,16 @@ BOOL WINAPI DllMain(
 
     case DLL_PROCESS_DETACH:
 
+        /// CLEANUP LOGGING MODULE
+         
+        __ctlog->killSignal = TRUE;
+        WaitForSingleObject(__ctlog->logWriteThread, INFINITE);
+
+        CTDynListDestroy(__ctlog->logWriteQueue);
+        CTLockDestroy(__ctlog->lock);
+
+        LocalFree(__ctlog);
+        
         /// CLEANUP GFX MODULE
 
         HeapDestroy(__ctgfx->heap);

@@ -13,21 +13,23 @@
 
 DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
-	UINT64 currentTime		= 0;
-	UINT64 nextSpinTime		= GetTickCount64();
+	UINT64 spinTimeStart = 0;
+	UINT64 spinTimeEnd   = 0;
+
+	puts("thread enter");
 
 	while (TRUE) {
 
-		while (currentTime < nextSpinTime) {
-			currentTime = GetTickCount64();
-			Sleep(nextSpinTime - currentTime);
-		}
+		Sleep(
+			max(
+				0,
+				CT_LOGGING_SLEEP_INTERVAL_MSECS - (spinTimeEnd - spinTimeStart)
+			)
+		);
 
-		nextSpinTime = currentTime + CT_LOGGING_SLEEP_INTERVAL_MSECS;
+		printf("running log cycle\n");
 
-		if (__ctlog->killSignal == TRUE)
-			ExitThread(ERROR_SUCCESS);
-
+		spinTimeStart = GetTickCount64();
 		
 		CTLockEnter(__ctlog->lock);
 		PCTIterator queueIter = CTIteratorCreate(__ctlog->logWriteQueue);
@@ -35,6 +37,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 		PCTLogEntry entry;
 		while ((entry = CTIteratorIterate(queueIter)) != NULL) {
 
+			CTLockEnter(entry->logStream->lock);
 			PCTFile writeFile = CTFileOpen(entry->logStream->streamName);
 
 			// FORMAT MESSAGE
@@ -87,8 +90,11 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 				strnlen_s(writeBuffer, CT_LOGGING_MAX_WRITE_SIZE)
 			);
 
+			entry->logStream->logCount += 1;
+
 			CTFree(writeBuffer);
 			CTFileClose(writeFile);
+			CTLockLeave(entry->logStream->lock);
 
 		}
 
@@ -97,6 +103,12 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 		CTLockLeave(__ctlog->lock);
 
+		spinTimeEnd = GetTickCount64();
+
+		if (__ctlog->killSignal == TRUE)
+			ExitThread(ERROR_SUCCESS);
+
+		printf("log cycle complete\n");
 	}
 
 }
