@@ -28,10 +28,14 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input);
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+typedef void (*PCTFUNCLOGHOOK)(PVOID entry, PVOID hookInput);
+
 #define CT_LOGSTREAM_NAME_SIZE				0x80
 typedef struct CTLogStream {
-	CHAR	streamName [CT_LOGSTREAM_NAME_SIZE];
-	UINT64	logCount;
+	PCTFUNCLOGHOOK	logHook;
+	PVOID			hookInput;
+	CHAR			streamName [CT_LOGSTREAM_NAME_SIZE];
+	UINT64			logCount;
 } CTLogStream, *PCTLogStream;
 
 #define CT_LOG_ENTRY_TYPE_INFO				0
@@ -48,7 +52,7 @@ typedef struct CTLogEntry {
 	CHAR			message[CT_LOG_MESSAGE_SIZE];
 } CTLogEntry, * PCTLogEntry;
 
-CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName);
+CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook, PVOID hookInput);
 CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream);
 CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message);
 CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message, ...);

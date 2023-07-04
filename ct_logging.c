@@ -36,6 +36,8 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	///			if (file has changed)
 	///				close file
 	///				open specified file
+	///			if (log hook exists)
+	///				call log hook
 	///			format log
 	///			write to file
 	///			
@@ -85,6 +87,13 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			if (strcmp(logFile->fileName, LOG_ENTRY->logStream->streamName) != 0) {
 				CTFileClose(logFile);
 				logFile = CTFileOpen(LOG_ENTRY->logStream->streamName);
+			}
+
+			if (LOG_ENTRY->logStream->logHook != NULL) {
+				LOG_ENTRY->logStream->logHook(
+					LOG_ENTRY,
+					LOG_ENTRY->logStream->hookInput
+				);
 			}
 
 			PCHAR	logFmtBuffer	= CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
@@ -161,7 +170,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 }
 
-CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName) {
+CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook, PVOID hookInput) {
 
 	if (streamName == NULL) {
 		CTErrorSetBadObject("CTLogStreamCreate failed: streamName was NULL");
@@ -176,6 +185,8 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName) {
 
 	PCTLogStream ls = CTAlloc(sizeof(*ls));
 	ls->logCount	= 0;
+	ls->logHook		= logHook;
+	ls->hookInput	= hookInput;
 	strcpy_s(
 		ls->streamName,
 		CT_LOGSTREAM_NAME_SIZE - 1,
