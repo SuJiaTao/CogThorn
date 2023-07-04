@@ -13,102 +13,107 @@
 
 DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
-	UINT64 spinTimeStart = 0;
-	UINT64 spinTimeEnd   = 0;
+	/// SUMMARY:
+	/// loop (forever)
+	///		sleep to satisfy sleep interval
+	///		record spin start time
+	///		
+	///		ENTER LOCK
+	///		
+	///		for (all queued log entries)
+	///			open specified file
+	///			format log
+	///			write to file
+	///			close file
+	///		
+	///		LEAVE LOCK
+	///		
+	///		if (recieived kill signal)
+	///			terminate thread
+	/// 
+	///		record spin end time
 
-	puts("thread enter");
+	INT64 SPIN_TIME_START = 0;
+	INT64 SPIN_TIME_END   = 0;
+	PCTLogEntry LOG_ENTRY = NULL;
 
 	while (TRUE) {
 
-		Sleep(
-			max(
-				0,
-				CT_LOGGING_SLEEP_INTERVAL_MSECS - (spinTimeEnd - spinTimeStart)
-			)
-		);
+		INT64 SPIN_TIME_TOTAL = SPIN_TIME_END - SPIN_TIME_START;
+		Sleep(max(0, SPIN_TIME_TOTAL));
 
-		printf("running log cycle\n");
-
-		spinTimeStart = GetTickCount64();
-		
 		CTLockEnter(__ctlog->lock);
-		PCTIterator queueIter = CTIteratorCreate(__ctlog->logWriteQueue);
+		SPIN_TIME_START = GetTickCount64();
 
-		PCTLogEntry entry;
-		while ((entry = CTIteratorIterate(queueIter)) != NULL) {
+		PCTIterator entryQueueIter = CTIteratorCreate(__ctlog->logWriteQueue);
 
-			CTLockEnter(entry->logStream->lock);
-			PCTFile writeFile = CTFileOpen(entry->logStream->streamName);
+		while ( (LOG_ENTRY = CTIteratorIterate(entryQueueIter))  != NULL) {
 
-			// FORMAT MESSAGE
-			// (mins.seconds) <THREADID> [MESSAGE TYPE]:
-			//		message
-			
-			const UINT32 CURRENT_TIME_SECS = GetTickCount64() / 1000;
-			const UINT32 CURRENT_TIME_MINS = CURRENT_TIME_SECS / 60;
-
-			PCHAR writeBuffer = CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
-
-			PCHAR messageTypeName = "Unkown";
-			switch (entry->logType)
+			PCTFile logFile			= CTFileOpen(LOG_ENTRY->logStream->streamName);
+			PCHAR	logFmtBuffer	= CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
+			INT64	totalTimeSecs	= (__ctlog->startTimeMsecs - GetTickCount64()) / 1000;
+			PCHAR	logTypeString	= "Unknown";
+			switch (LOG_ENTRY->logType)
 			{
+
 			case CT_LOG_ENTRY_TYPE_INFO:
-				messageTypeName = "Info";
+				logTypeString = "Info";
 				break;
 
 			case CT_LOG_ENTRY_TYPE_INFO_IMPORTANT:
-				messageTypeName = "Important Info";
+				logTypeString = "Imporant Info";
 				break;
 
 			case CT_LOG_ENTRY_TYPE_WARNING:
-				messageTypeName = "Warning";
+				logTypeString = "Warning";
 				break;
 
 			case CT_LOG_ENTRY_TYPE_FAILURE:
-				messageTypeName = "Failure";
+				logTypeString = "Failue";
 				break;
 
 			default:
 				break;
+
 			}
 
+			INT32 timeHours =  totalTimeSecs / 3600;
+			INT32 timeMins	= (totalTimeSecs / 60) % 60;
+			INT32 timeSecs	= (totalTimeSecs) % 60;
+
 			sprintf_s(
-				writeBuffer,
+				logFmtBuffer,
 				CT_LOGGING_MAX_WRITE_SIZE - 1,
-				"(%d.%d) <%d> [%s]:\n\t%s\n",
-				CURRENT_TIME_SECS % 60,
-				CURRENT_TIME_MINS,
-				entry->logThreadID,
-				messageTypeName,
-				entry->message
+				"<%04d> ( %02dh:%02dm:%02ds ) [ THREADID: %X ] [ %s ] \n\t%s\n",
+				(INT32)LOG_ENTRY->logNumber,
+				timeHours,
+				timeMins,
+				timeSecs,
+				LOG_ENTRY->logThreadID,
+				logTypeString,
+				logFmtBuffer
 			);
 
 			CTFileWrite(
-				writeFile,
-				writeBuffer,
-				CTFileSize(writeFile),
-				strnlen_s(writeBuffer, CT_LOGGING_MAX_WRITE_SIZE)
+				logFile,
+				logFmtBuffer,
+				CTFileSize(logFile),
+				strnlen_s(logFmtBuffer, CT_LOGGING_MAX_WRITE_SIZE)
 			);
 
-			entry->logStream->logCount += 1;
-
-			CTFree(writeBuffer);
-			CTFileClose(writeFile);
-			CTLockLeave(entry->logStream->lock);
+			CTFree(logFmtBuffer);
+			CTFileClose(logFile);
 
 		}
 
-		CTIteratorDestroy(queueIter);
-		CTDynListClean(__ctlog->logWriteQueue);
+		CTIteratorDestroy(entryQueueIter);
 
 		CTLockLeave(__ctlog->lock);
-
-		spinTimeEnd = GetTickCount64();
+		SPIN_TIME_END = GetTickCount64();
 
 		if (__ctlog->killSignal == TRUE)
 			ExitThread(ERROR_SUCCESS);
 
-		printf("log cycle complete\n");
 	}
 
 }
@@ -127,7 +132,6 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName) {
 	}
 
 	PCTLogStream ls = CTAlloc(sizeof(*ls));
-	ls->lock		= CTLockCreate();
 	ls->logCount	= 0;
 	strcpy_s(
 		ls->streamName,
@@ -138,44 +142,58 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName) {
 	CTFileClose(logFile);
 
 	return ls;
+
 }
 
 CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream) {
 
+	CTLockEnter(__ctlog->lock);
+
 	if (stream == NULL) {
+
 		CTErrorSetBadObject("CTLogStreamDestroy failed: stream was NULL");
+		CTLockLeave(__ctlog->lock);
+
 		return FALSE;
+
 	}
 
-	CTLockEnter(stream->lock);
-	CTLockDestroy(stream->lock);
 	CTFree(stream);
 
+	CTLockLeave(__ctlog->lock);
 	return TRUE;
 
 }
 
 CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 
+	CTLockEnter(__ctlog->lock);
+
 	if (stream == NULL) {
+
 		CTErrorSetBadObject("CTLog failed: stream was NULL");
+		CTLockLeave(__ctlog->lock);
+
 		return FALSE;
+
 	}
 
 	if (message == NULL) {
-		CTErrorSetBadObject("CTLog failed: message was NULL");
-		return FALSE;
-	}
 
-	CTLockEnter(__ctlog->lock);
-	CTLockEnter(stream->lock);
+		CTErrorSetBadObject("CTLog failed: message was NULL");
+		CTLockLeave(__ctlog->lock);
+
+		return FALSE;
+
+	}
 
 	CTDynListLock(__ctlog->logWriteQueue);
 
 	PCTLogEntry pentry = CTDynListAdd(__ctlog->logWriteQueue);
 	pentry->logStream = stream;
 	pentry->logThreadID = GetThreadId(GetCurrentThread());
-	pentry->logType		= logType;
+	pentry->logType = logType;
+
 	strcpy_s(
 		pentry->message,
 		CT_LOG_MESSAGE_SIZE - 1,
@@ -184,11 +202,35 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 
 	CTDynListUnlock(__ctlog->logWriteQueue);
 
-	CTLockLeave(stream->lock);
 	CTLockLeave(__ctlog->lock);
+
+	return TRUE;
 
 }
 
-CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logTYpe, PCHAR message, ...) {
+CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message, ...) {
+
+	va_list args;
+	va_start(args, message);
+
+	CHAR fmtBuffer [CT_ERRMSG_MESSAGE_MAX_SIZE];
+	ZeroMemory(&fmtBuffer, sizeof(fmtBuffer));
+
+	vsprintf_s(
+		fmtBuffer,
+		sizeof(fmtBuffer) - 1,
+		message,
+		args
+	);
+
+	BOOL logFuncRslt = CTLog(
+		stream,
+		logType,
+		fmtBuffer
+	);
+
+	va_end(args, message);
+
+	return logFuncRslt;
 
 }

@@ -18,7 +18,7 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_LOGGING_SLEEP_INTERVAL_MSECS		100
+#define CT_LOGGING_SLEEP_INTERVAL_MSECS		256
 #define CT_LOGGING_MAX_WRITE_SIZE			512
 DWORD __stdcall __CTLoggingThreadProc(PVOID input);
 
@@ -30,7 +30,6 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input);
 
 #define CT_LOGSTREAM_NAME_SIZE				0x80
 typedef struct CTLogStream {
-	PCTLock	lock;
 	CHAR	streamName [CT_LOGSTREAM_NAME_SIZE];
 	UINT64	logCount;
 } CTLogStream, *PCTLogStream;
@@ -41,6 +40,7 @@ typedef struct CTLogStream {
 #define CT_LOG_ENTRY_TYPE_FAILURE			3
 #define CT_LOG_MESSAGE_SIZE					0xFF
 typedef struct CTLogEntry {
+	UINT64			logNumber;
 	DWORD			logThreadID;
 	PCTLogStream	logStream;
 	UINT32			logType;
@@ -50,7 +50,7 @@ typedef struct CTLogEntry {
 CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName);
 CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream);
 CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message);
-CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logTYpe, PCHAR message, ...);
+CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message, ...);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -61,6 +61,7 @@ CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logTYpe, PCHAR message
 #define CT_LOGGING_QUEUE_NODE_SIZE	0xFF
 typedef struct CTLogging {
 
+	INT64		startTimeMsecs;
 	PCTLock		lock;
 	HANDLE		logWriteThread;
 	PCTDynList	logWriteQueue;

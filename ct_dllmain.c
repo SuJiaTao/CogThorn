@@ -50,6 +50,7 @@ BOOL WINAPI DllMain(
 
         ZeroMemory(__ctlog, sizeof(*__ctlog));
 
+        __ctlog->startTimeMsecs = GetTickCount64();
         __ctlog->lock           = CTLockCreate();
         __ctlog->killSignal     = FALSE;
         __ctlog->logWriteQueue  = CTDynListCreate(
