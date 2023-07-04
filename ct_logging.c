@@ -47,9 +47,9 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	/// 
 	///		record spin end time
 
-	INT64 SPIN_TIME_START	= 0;
-	INT64 SPIN_TIME_END		= 0;
-	PCTLogEntry LOG_ENTRY	= NULL;
+	INT64 SPIN_TIME_START		= 0;
+	INT64 SPIN_TIME_END			= CT_LOGGING_SLEEP_INTERVAL_MSECS;
+	PCTLogEntry LOG_ENTRY		= NULL;
 	PCTDynList logWriteBuffer	= CTDynListCreate(sizeof(CTLogEntry), CT_LOGGING_QUEUE_NODE_SIZE);
 
 	while (TRUE) {
@@ -60,8 +60,9 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			Sleep(max(0, CT_LOGGING_SLEEP_INTERVAL_MSECS - SPIN_TIME_TOTAL));
 		}
 
-		CTLockEnter(__ctlog->lock);
 		SPIN_TIME_START = GetTickCount64();
+
+		CTLockEnter(__ctlog->lock);
 
 		PCTIterator logQueueIter = CTIteratorCreate(__ctlog->logWriteQueue);
 		while ((LOG_ENTRY = CTIteratorIterate(logQueueIter)) != NULL) {
@@ -155,8 +156,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			CTDynListDestroy(logWriteBuffer);
 			ExitThread(ERROR_SUCCESS);
 		}
-			
-
+		
 	}
 
 }
