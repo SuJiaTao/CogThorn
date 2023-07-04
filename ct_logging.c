@@ -143,6 +143,29 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName) {
 		streamName
 	);
 
+	SYSTEMTIME streamInitTime;
+	GetLocalTime(&streamInitTime);
+
+	PCHAR fileHeaderFmtBuffer = CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
+	sprintf_s(
+		fileHeaderFmtBuffer,
+		CT_LOGGING_MAX_WRITE_SIZE - 1,
+		"< %s >\n[ %dh : %dm : %ds : %dms ]\n",
+		streamName,
+		streamInitTime.wHour,
+		streamInitTime.wMinute,
+		streamInitTime.wSecond,
+		streamInitTime.wMilliseconds
+	);
+
+	CTFileWrite(
+		logFile,
+		fileHeaderFmtBuffer,
+		CTFileSize(logFile),
+		strnlen_s(fileHeaderFmtBuffer, CT_LOGGING_MAX_WRITE_SIZE)
+	);
+	CTFree(fileHeaderFmtBuffer);
+
 	CTFileClose(logFile);
 
 	return ls;
