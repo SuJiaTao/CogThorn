@@ -192,14 +192,15 @@ CTCALL __forceinline CTColor CTSSample(PCTFB texture, CTVect UV, UINT32 sampleMe
 
 	case CTS_SAMPLE_METHOD_CLAMP_TO_EDGE:
 
-		UV.x = min(1.0f, max(UV.x, 0));
-		UV.y = min(1.0f, max(UV.y, 0));
-		break;
+		if (UV.x < 0.0f || UV.x > 1.0f || UV.y < 0.0f || UV.y > 1.0f)
+			goto __CTSSampleComplete;
 
 	case CTS_SAMPLE_METHOD_CLAMP:
 
-		if (UV.x < 0.0f || UV.x > 1.0f || UV.y < 0.0f || UV.y > 1.0f)
-			goto __CTSSampleComplete;
+		UV.x = min(0.999999f, max(UV.x, 0.0f));
+		UV.y = min(0.999999f, max(UV.y, 0.0f));
+		
+		break;
 
 	case CTS_SAMPLE_METHOD_REPEAT:
 
@@ -220,7 +221,7 @@ CTCALL __forceinline CTColor CTSSample(PCTFB texture, CTVect UV, UINT32 sampleMe
 
 	}
 
-	UINT32 samplex = (UINT32)(UV.x * (FLOAT)(texture->width));
+	UINT32 samplex = (UINT32)(UV.x * (FLOAT)(texture->width ));
 	UINT32 sampley = (UINT32)(UV.y * (FLOAT)(texture->height));
 
 	CTFrameBufferGet(
