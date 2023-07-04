@@ -41,6 +41,7 @@ typedef struct CTLogStream {
 #define CT_LOG_MESSAGE_SIZE					0xFF
 typedef struct CTLogEntry {
 	UINT64			logNumber;
+	UINT64			logTimeMsecs;
 	DWORD			logThreadID;
 	PCTLogStream	logStream;
 	UINT32			logType;

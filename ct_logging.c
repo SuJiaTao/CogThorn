@@ -52,7 +52,6 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 			PCTFile logFile			= CTFileOpen(LOG_ENTRY->logStream->streamName);
 			PCHAR	logFmtBuffer	= CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
-			INT64	totalTimeSecs	= (__ctlog->startTimeMsecs - GetTickCount64()) / 1000;
 			PCHAR	logTypeString	= "Unknown";
 			switch (LOG_ENTRY->logType)
 			{
@@ -78,18 +77,21 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 			}
 
-			INT32 timeHours =  totalTimeSecs / 3600;
-			INT32 timeMins	= (totalTimeSecs / 60) % 60;
-			INT32 timeSecs	= (totalTimeSecs) % 60;
+			INT64 totalTimeSecs = LOG_ENTRY->logTimeMsecs / 1000;
+			INT32 timeHours		= totalTimeSecs  / 3600;
+			INT32 timeMins		= (totalTimeSecs / 60) % 60;
+			INT32 timeSecs		= (totalTimeSecs) % 60;
+			INT32 timeMsecs		= LOG_ENTRY->logTimeMsecs % 1000;
 
 			sprintf_s(
 				logFmtBuffer,
 				CT_LOGGING_MAX_WRITE_SIZE - 1,
-				"<%04d> ( %02dh:%02dm:%02ds ) [ THREADID: %X ] [ %s ] \n\t%s\n",
+				"<%04d> ( %02dh : %02dm : %02ds : %03dms ) [ THREADID: %X ] [ %s ] \n\t%s\n",
 				(INT32)LOG_ENTRY->logNumber,
 				timeHours,
 				timeMins,
 				timeSecs,
+				timeMsecs,
 				LOG_ENTRY->logThreadID,
 				logTypeString,
 				LOG_ENTRY->message
@@ -191,11 +193,12 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 
 	CTDynListLock(__ctlog->logWriteQueue);
 
-	PCTLogEntry pentry	= CTDynListAdd(__ctlog->logWriteQueue);
-	pentry->logStream	= stream;
-	pentry->logThreadID = GetThreadId(GetCurrentThread());
-	pentry->logType		= logType;
-	pentry->logNumber	= stream->logCount++;
+	PCTLogEntry pentry		= CTDynListAdd(__ctlog->logWriteQueue);
+	pentry->logStream		= stream;
+	pentry->logThreadID		= GetThreadId(GetCurrentThread());
+	pentry->logType			= logType;
+	pentry->logNumber		= stream->logCount++;
+	pentry->logTimeMsecs	= GetTickCount64() - __ctlog->startTimeMsecs;
 
 	strcpy_s(
 		pentry->message,
