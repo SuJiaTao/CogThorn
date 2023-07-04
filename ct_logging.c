@@ -25,6 +25,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	///			format log
 	///			write to file
 	///			close file
+	///		CLEAR QUEUE
 	///		
 	///		LEAVE LOCK
 	///		
@@ -91,7 +92,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 				timeSecs,
 				LOG_ENTRY->logThreadID,
 				logTypeString,
-				logFmtBuffer
+				LOG_ENTRY->message
 			);
 
 			CTFileWrite(
@@ -107,6 +108,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 		}
 
 		CTIteratorDestroy(entryQueueIter);
+		CTDynListClear(__ctlog->logWriteQueue);
 
 		CTLockLeave(__ctlog->lock);
 		SPIN_TIME_END = GetTickCount64();
@@ -189,10 +191,11 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 
 	CTDynListLock(__ctlog->logWriteQueue);
 
-	PCTLogEntry pentry = CTDynListAdd(__ctlog->logWriteQueue);
-	pentry->logStream = stream;
+	PCTLogEntry pentry	= CTDynListAdd(__ctlog->logWriteQueue);
+	pentry->logStream	= stream;
 	pentry->logThreadID = GetThreadId(GetCurrentThread());
-	pentry->logType = logType;
+	pentry->logType		= logType;
+	pentry->logNumber	= stream->logCount++;
 
 	strcpy_s(
 		pentry->message,
