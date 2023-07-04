@@ -60,6 +60,15 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream);
 CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message);
 CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message, ...);
 
+#define CTLogInfo(stream, msg, ...)			\
+	CTLogFormatted(stream, CT_LOG_ENTRY_TYPE_INFO, msg, __VA_ARGS__ )
+#define CTLogImportant(stream, msg, ...)	\
+	CTLogFormatted(stream, CT_LOG_ENTRY_TYPE_INFO_IMPORTANT, msg, __VA_ARGS__ )
+#define CTLogWarning(stream, msg, ...)		\
+	CTLogFormatted(stream, CT_LOG_ENTRY_TYPE_WARNING, msg, __VA_ARGS__ )
+#define CTLogFailure(stream, msg, ...)		\
+	CTLogFormatted(stream, CT_LOG_ENTRY_TYPE_FAILURE, msg, __VA_ARGS__ )
+
 //////////////////////////////////////////////////////////////////////////////
 ///
 ///							LOGGING MODULE INSTANCE
