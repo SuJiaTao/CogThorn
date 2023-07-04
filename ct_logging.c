@@ -31,11 +31,17 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	///		LEAVE LOCK
 	/// 
 	///		for (all in write list)
-	///			open specified file
+	///			if (file is NULL)
+	///				open specified file
+	///			if (file has changed)
+	///				close file
+	///				open specified file
 	///			format log
 	///			write to file
-	///			close file
-	///		
+	///			
+	///		if (file is unclosed)
+	///			close file	
+	/// 
 	///		if (recieived kill signal)
 	///			terminate thread
 	/// 
@@ -98,7 +104,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 				break;
 
 			case CT_LOG_ENTRY_TYPE_FAILURE:
-				logTypeString = "Failue";
+				logTypeString = "Failure";
 				break;
 
 			default:
