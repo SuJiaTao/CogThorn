@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="ct_base.h" />
     <ClInclude Include="ct_gfx.h" />
+    <ClInclude Include="ct_logging.h" />
     <ClInclude Include="ct_math.h" />
     <ClInclude Include="ct_window.h" />
   </ItemGroup>
@@ -38,6 +39,7 @@
     <ClCompile Include="ct_gfx_mesh.c" />
     <ClCompile Include="ct_gfx_point.c" />
     <ClCompile Include="ct_gfx_shader.c" />
+    <ClCompile Include="ct_logging.c" />
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />
     <ClCompile Include="ct_math_vector.c" />

@@ -25,6 +25,9 @@
     <Filter Include="Source Files\Window">
       <UniqueIdentifier>{7057b069-69f8-46c8-b4cd-38fc6d734460}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Logging">
+      <UniqueIdentifier>{21e711f4-aefa-482b-bcfd-b95c10939904}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h">
@@ -37,6 +40,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ct_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ct_logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -91,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="ct_window.c">
       <Filter>Source Files\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_logging.c">
+      <Filter>Source Files\Logging</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

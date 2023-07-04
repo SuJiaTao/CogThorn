@@ -8,6 +8,7 @@
 
 #include "ct_base.h"
 #include "ct_gfx.h"
+#include "ct_logging.h"
 
 BOOL WINAPI DllMain(
     HINSTANCE hinstDLL,
@@ -39,6 +40,25 @@ BOOL WINAPI DllMain(
         __ctgfx->heap = HeapCreate(0, 0, 0);
 
         SetProcessDPIAware();
+
+        /// INITIALIZE LOGGING MODULE
+
+        __ctlog = LocalAlloc(0, sizeof(*__ctlog));
+        if (__ctlog == NULL) return FALSE;
+
+        ZeroMemory(__ctlog, sizeof(*__ctlog));
+
+        __ctlog->lock           = CTLockCreate();
+        __ctlog->killSignal     = FALSE;
+        __ctlog->logWriteQueue  = CTDynListCreate(
+            sizeof(CTLogEntry), 
+            CT_LOGGING_QUEUE_NODE_SIZE
+        );
+        __ctlog->logWriteThread = CreateThread(
+            NULL,
+            NULL,
+
+        )
 
         break;
 
