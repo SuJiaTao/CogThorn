@@ -17,6 +17,11 @@ CTCALL	BOOL		CTFileExists(PCHAR path) {
 
 CTCALL	PCTFile		CTFileCreate(PCHAR path) {
 	
+	if (path == NULL) {
+		CTErrorSetBadObject("CTFileCreate failed: path was NULL");
+		return NULL;
+	}
+
 	PCTFile file	= CTAlloc(sizeof(*file));
 	file->hFile = CreateFileA(
 		path,
@@ -36,10 +41,21 @@ CTCALL	PCTFile		CTFileCreate(PCHAR path) {
 		return NULL;
 	}
 
+	strcpy_s(
+		file->fileName,
+		CT_FILENAME_MAX_LENGTH - 1,
+		path
+	);
+
 	return file;
 }
 
 CTCALL	BOOL		CTFileDelete(PCHAR path) {
+
+	if (path == NULL) {
+		CTErrorSetBadObject("CTFileDelete failed: path was NULL");
+		return FALSE;
+	}
 
 	BOOL rslt = DeleteFileA(path);
 
@@ -51,6 +67,11 @@ CTCALL	BOOL		CTFileDelete(PCHAR path) {
 }
 
 CTCALL	PCTFile		CTFileOpen(PCHAR path) {
+
+	if (path == NULL) {
+		CTErrorSetBadObject("CTFileOpen failed: path was NULL");
+		return NULL;
+	}
 
 	PCTFile file = CTAlloc(sizeof(*file));
 	file->hFile = CreateFileA(
@@ -69,6 +90,12 @@ CTCALL	PCTFile		CTFileOpen(PCHAR path) {
 		CTFree(file);
 		return NULL;
 	}
+
+	strcpy_s(
+		file->fileName,
+		CT_FILENAME_MAX_LENGTH - 1,
+		path
+	);
 
 	return file;
 }

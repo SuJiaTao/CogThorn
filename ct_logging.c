@@ -54,8 +54,6 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			Sleep(max(0, CT_LOGGING_SLEEP_INTERVAL_MSECS - SPIN_TIME_TOTAL));
 		}
 
-		printf("spinning %d %d\n", __ctlog->logWriteQueue->elementsUsedCount, SPIN_TIME_TOTAL);
-
 		CTLockEnter(__ctlog->lock);
 		SPIN_TIME_START = GetTickCount64();
 
@@ -70,9 +68,18 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 		CTLockLeave(__ctlog->lock);
 
 		PCTIterator writeBufferIter = CTIteratorCreate(logWriteBuffer);
+		PCTFile		logFile			= NULL;
 		while ( (LOG_ENTRY = CTIteratorIterate(writeBufferIter)) != NULL) {
 
-			PCTFile logFile			= CTFileOpen(LOG_ENTRY->logStream->streamName);
+			if (logFile == NULL) {
+				logFile = CTFileOpen(LOG_ENTRY->logStream->streamName);
+			}
+
+			if (strcmp(logFile->fileName, LOG_ENTRY->logStream->streamName) != 0) {
+				CTFileClose(logFile);
+				logFile = CTFileOpen(LOG_ENTRY->logStream->streamName);
+			}
+
 			PCHAR	logFmtBuffer	= CTAlloc(CT_LOGGING_MAX_WRITE_SIZE);
 			PCHAR	logTypeString	= "Unknown";
 			switch (LOG_ENTRY->logType)
@@ -108,7 +115,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			sprintf_s(
 				logFmtBuffer,
 				CT_LOGGING_MAX_WRITE_SIZE - 1,
-				"<%04d> ( %02dh : %02dm : %02ds : %03dms ) [ THREADID: %X ] [ %s ] \n\t%s\n",
+				"<%08d> ( %02dh : %02dm : %02ds : %03dms ) [ THREADID: %X ] [ %s ] \n\t%s\n",
 				(INT32)LOG_ENTRY->logNumber,
 				timeHours,
 				timeMins,
@@ -127,9 +134,11 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			);
 
 			CTFree(logFmtBuffer);
-			CTFileClose(logFile);
 
 		}
+
+		if (logFile != NULL)
+			CTFileClose(logFile);
 
 		CTIteratorDestroy(writeBufferIter);
 		CTDynListClear(logWriteBuffer);

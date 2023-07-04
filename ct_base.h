@@ -66,8 +66,10 @@ CTCALL	void		CTErrorAddCallback(PCTFUNCERRORCALLBACK pfErrCallback);
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#define CT_FILENAME_MAX_LENGTH	0xFF
 typedef struct CTFile {
-	HANDLE hFile;
+	CHAR	fileName [CT_FILENAME_MAX_LENGTH];
+	HANDLE	hFile;
 } CTFile, *PCTFile;
 
 CTCALL	BOOL		CTFileExists(PCHAR path);
