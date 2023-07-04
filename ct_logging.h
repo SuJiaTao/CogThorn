@@ -31,11 +31,14 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input);
 typedef void (*PCTFUNCLOGHOOK)(PVOID entry, PVOID hookInput);
 
 #define CT_LOGSTREAM_NAME_SIZE				0x80
+#define CT_LOGSTREAM_DESTROY_SPIN_DELAY		1
 typedef struct CTLogStream {
+	BOOL			destroySignal;
 	PCTFUNCLOGHOOK	logHook;
 	PVOID			hookInput;
 	CHAR			streamName [CT_LOGSTREAM_NAME_SIZE];
 	UINT64			logCount;
+	UINT64			logsOutstanding;
 } CTLogStream, *PCTLogStream;
 
 #define CT_LOG_ENTRY_TYPE_INFO				0

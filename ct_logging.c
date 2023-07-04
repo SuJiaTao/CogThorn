@@ -40,6 +40,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	///				call log hook
 	///			format log
 	///			write to file
+	///			decrement stream's outstanding log count
 	///			
 	///		if (file is unclosed)
 	///			close file	
@@ -151,6 +152,8 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 			CTFree(logFmtBuffer);
 
+			InterlockedAdd64(&LOG_ENTRY->logStream->logsOutstanding, -1);
+
 		}
 
 		if (logFile != NULL)
@@ -183,10 +186,12 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook,
 		return NULL;
 	}
 
-	PCTLogStream ls = CTAlloc(sizeof(*ls));
-	ls->logCount	= 0;
-	ls->logHook		= logHook;
-	ls->hookInput	= hookInput;
+	PCTLogStream ls		= CTAlloc(sizeof(*ls));
+	ls->logCount		= 0;
+	ls->logsOutstanding	= 0;
+	ls->logHook			= logHook;
+	ls->hookInput		= hookInput;
+	ls->destroySignal	= FALSE;
 	strcpy_s(
 		ls->streamName,
 		CT_LOGSTREAM_NAME_SIZE - 1,
@@ -235,8 +240,26 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream) {
 
 	}
 
-	CTFree(stream);
+	if (stream->destroySignal == TRUE) {
 
+		CTErrorSetBadObject("CTLogStreamDestroy failed: stream is already being destroyed");
+		CTLockLeave(__ctlog->lock);
+
+		return FALSE;
+
+	}
+
+	stream->destroySignal = TRUE;
+
+	CTLockLeave(__ctlog->lock);
+
+	// wait for outstanding count to become 0
+	while (stream->logsOutstanding > 0) {
+		Sleep(CT_LOGSTREAM_DESTROY_SPIN_DELAY);
+	}
+
+	CTLockEnter(__ctlog->lock);
+	CTFree(stream);
 	CTLockLeave(__ctlog->lock);
 	return TRUE;
 
@@ -264,6 +287,15 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 
 	}
 
+	if (stream->destroySignal == TRUE) {
+
+		CTErrorSetBadObject("CTLogStreamDestroy failed: stream is being destroyed");
+		CTLockLeave(__ctlog->lock);
+
+		return FALSE;
+
+	}
+
 	CTDynListLock(__ctlog->logWriteQueue);
 
 	PCTLogEntry pentry		= CTDynListAdd(__ctlog->logWriteQueue);
@@ -272,6 +304,8 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 	pentry->logType			= logType;
 	pentry->logNumber		= stream->logCount++;
 	pentry->logTimeMsecs	= GetTickCount64() - __ctlog->startTimeMsecs;
+
+	InterlockedAdd64(&stream->logsOutstanding, 1);
 
 	strcpy_s(
 		pentry->message,
