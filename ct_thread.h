@@ -40,7 +40,7 @@ typedef struct CTThread {
 	PVOID				threadData;
 	PCTFUNCTHREADPROC	threadProc;
 	UINT64				threadSpinCount;
-	UINT64				threadSpinIntervalMsec;
+	INT64				threadSpinIntervalMsec;
 	PCTDynList			threadTaskQueue;
 	BOOL				killSignal;
 } CTThread, *PCTThread;
@@ -53,7 +53,5 @@ CTCALL	PCTThread	CTThreadCreate(
 );
 CTCALL	BOOL		CTThreadDestroy(PCTThread thread);
 CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID userInput);
-CTCALL	BOOL		CTThreadLock(PCTThread thread);
-CTCALL	BOOL		CTThreadUnlock(PCTThread thread);
 
 #endif
