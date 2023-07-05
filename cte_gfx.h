@@ -60,9 +60,11 @@ CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader shader);
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_GPROC_REASON_INIT	0
-#define CT_GPROC_REASON_UPDATE	1
-#define CT_GPROC_REASON_DESTROY	2
+#define CT_GPROC_REASON_INIT		0
+#define CT_GPROC_REASON_UPDATE		1
+#define CT_GPROC_REASON_DESTROY		2
+#define CT_GPROC_REASON_PRE_RENDER	3
+#define CT_GPROC_REASON_POST_RENDER	4
 typedef (*PCTFUNCGOPROC)(
 	UINT32	reason,
 	PVOID	object,
@@ -77,10 +79,10 @@ typedef struct CTTransform {
 } CTTransform, *PCTTransform, CTTForm, *PCTTForm;
 
 typedef struct CTGObject {
-	PCTLock			objLock;
 	BOOL			visible;
 	BOOL			destroySignal;
 	UINT32			outlineSizePixels;
+	PCTMesh			mesh;
 	PCTSubShader	subShader;
 	CTColor			tintColor;
 	CTColor			outlineColor;
@@ -94,11 +96,37 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	CTVect			scale,
 	FLOAT			rotation,
 	FLOAT			layer,
+	PCTMesh			mesh,
 	PCTSubShader	subShader,
 	SIZE_T			gDataSizeBytes,
 	PVOID			initInput
 );
-
 CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO gObject);
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								CAMERA OBJECT
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+typedef struct CTCamera {
+	CTTransform	transform;
+	PCTFB		renderTarget;
+	BOOL		destroySignal;
+} CTCamera, *PCTCamera;
+
+CTCALL	PCTCamera	CTCameraCreate(
+	CTVect	position,
+	CTVect	scale,
+	FLOAT	rotation,
+	PCTFB	renderTarget
+);
+CTCALL	BOOL		CTCameraDestroy(PCTCamera camera);
+
+//////////////////////////////////////////////////////////////////////////////
+///
+///								CAMERA OBJECT
+/// 
+//////////////////////////////////////////////////////////////////////////////
 
 #endif
