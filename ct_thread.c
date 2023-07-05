@@ -26,6 +26,7 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 	/// SUMMARY:
 	/// call thread init
 	/// loop (forever)
+	///		ENTER LOCK
 	///		record start time
 	///		call thread spin
 	///		loop (all threadtasks)
@@ -34,6 +35,7 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 	///			call thread exit
 	///			exit
 	///		record end time
+	///		LEAVE LOCK
 	///		sleep(spin_time - elasped time)
 
 	PCTThread thread	= threadInput->thread;
@@ -55,11 +57,12 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 
 	while (TRUE) {
 
+		CTLockEnter(thread->threadLock);
+
 		INT64 SPIN_START;
 		QueryPerformanceCounter(&SPIN_START);
 		SPIN_START /= CLOCK_FREQUENCY_MSEC;
 
-		CTLockEnter(thread->threadLock);
 		thread->threadProc(
 			CT_THREADPROC_REASON_SPIN,
 			thread,
@@ -67,26 +70,20 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 			NULL
 		);
 		thread->threadSpinCount++;
-		CTLockLeave(thread->threadLock);
 
 		PCTIterator taskIter		= CTIteratorCreate(thread->threadTaskQueue);
 		P__CTThreadTaskData task	= NULL;
 		while ((task = CTIteratorIterate(taskIter)) != NULL) {
-
-			CTLockEnter(thread->threadLock);
 			task->taskFunc(
 				thread,
 				thread->threadData,
 				task->userInput
 			);
-			CTLockLeave(thread->threadLock);
-
 		}
 
 		CTIteratorDestroy(taskIter);
 		CTDynListClear(thread->threadTaskQueue);
 
-		CTLockEnter(thread->threadLock);
 		if (thread->killSignal == TRUE) {
 
 			thread->threadProc(
@@ -104,11 +101,12 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 			ExitThread(ERROR_SUCCESS);
 
 		}
-		CTLockLeave(thread->threadLock);
 
 		INT64 SPIN_END;
 		QueryPerformanceCounter(&SPIN_END);
 		SPIN_END /= CLOCK_FREQUENCY_MSEC;
+
+		CTLockLeave(thread->threadLock);
 
 		Sleep(max(0, thread->threadSpinIntervalMsec - (SPIN_END - SPIN_START)));
 
@@ -157,20 +155,24 @@ CTCALL	PCTThread	CTThreadCreate(
 }
 
 CTCALL	BOOL		CTThreadDestroy(PCTThread thread) {
+
 	if (thread == NULL) {
 		CTErrorSetBadObject("CTThreadDestroy failed: thread was NULL");
 		return FALSE;
 	}
+
+	CTLockEnter(thread->threadLock);
 	if (thread->killSignal == TRUE) {
 		CTErrorSetBadObject("CTThreadDestroy failed: thread is already being destroyed");
+		CTLockLeave(thread->threadLock);
 		return FALSE;
 	}
 
-	CTLockEnter(thread->threadLock);
 	thread->killSignal = TRUE;
 	CTLockLeave(thread->threadLock);
 
 	WaitForSingleObject(thread->hThread, INFINITE);
+
 	return TRUE;
 }
 
@@ -183,12 +185,14 @@ CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID user
 		CTErrorSetBadObject("CTThreadTask failed: pfTask was NULL");
 		return FALSE;
 	}
+
+	CTLockEnter(thread->threadLock);
 	if (thread->killSignal == TRUE) {
 		CTErrorSetFunction("CTThreadTask failed: thread is being destroyed");
+		CTLockLeave(thread->threadLock);
 		return FALSE;
 	}
 
-	CTLockEnter(thread->threadLock);
 	CTDynListLock(thread->threadTaskQueue);
 
 	P__CTThreadTaskData task = CTDynListAdd(thread->threadTaskQueue);
