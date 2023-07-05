@@ -66,6 +66,7 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 			thread->threadData,
 			NULL
 		);
+		thread->threadSpinCount++;
 		CTLockLeave(thread->threadLock);
 
 		PCTIterator taskIter		= CTIteratorCreate(thread->threadTaskQueue);
