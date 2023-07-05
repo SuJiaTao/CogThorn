@@ -205,3 +205,25 @@ CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID user
 
 	return TRUE;
 }
+
+CTCALL	BOOL		CTThreadLock(PCTThread thread) {
+	if (thread == NULL) {
+		CTErrorSetBadObject("CTThreadLock failed: thread was NULL");
+		return FALSE;
+	}
+
+	CTLockEnter(thread->threadLock);
+
+	return TRUE;
+}
+
+CTCALL	BOOL		CTThreadUnlock(PCTThread thread) {
+	if (thread == NULL) {
+		CTErrorSetBadObject("CTThreadUnlock failed: thread was NULL");
+		return FALSE;
+	}
+
+	CTLockLeave(thread->threadLock);
+
+	return TRUE;
+}
