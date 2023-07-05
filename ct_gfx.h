@@ -244,9 +244,9 @@ __CTSSampleComplete:
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct CTGfx {
+typedef struct CTModuleGFX {
 	HANDLE heap;
-} CTGfx, *PCTGfx;
-PCTGfx __ctgfx;		/// INSTANCE ///
+} CTModuleGFX, *PCTModuleGFX;
+PCTModuleGFX __ctgfx;		/// INSTANCE ///
 
 #endif

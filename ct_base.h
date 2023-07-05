@@ -145,14 +145,14 @@ CTCALL	PVOID		CTIteratorIterate(PCTIterator iterator);
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef struct CTBase {
+typedef struct CTModuleBase {
 	HANDLE					heap;
 	SIZE_T					heapAllocCount;
 	SIZE_T					heapAllocBytes;
 	CRITICAL_SECTION		errorLock;
 	CTErrMsg				lastError;
 	PCTErrMsgCallbackNode	errorCallbackList;
-} CTBase, *PCTBase;
-PCTBase __ctbase;	/// INSTANCE ///
+} CTModuleBase, *PCTModuleBase;
+PCTModuleBase __ctbase;	/// INSTANCE ///
 
 #endif

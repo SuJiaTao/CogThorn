@@ -76,7 +76,7 @@ CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message
 //////////////////////////////////////////////////////////////////////////////
 
 #define CT_LOGGING_QUEUE_NODE_SIZE	1024
-typedef struct CTLogging {
+typedef struct CTModuleLogging {
 
 	INT64		startTimeMsecs;
 	PCTLock		lock;
@@ -84,7 +84,7 @@ typedef struct CTLogging {
 	PCTDynList	logWriteQueue;
 	BOOL		killSignal;
 
-} CTLogging, *PCTLogging;
-PCTLogging __ctlog;			/// INSTANCE ///
+} CTModuleLogging, *PCTModuleLogging;
+PCTModuleLogging __ctlog;			/// INSTANCE ///
 
 #endif
