@@ -21,6 +21,13 @@ BOOL WINAPI DllMain(
     {
     case DLL_PROCESS_ATTACH:
 
+        /// INITIALIZE THREAD MODULE
+    {
+        TIMECAPS timeCaps;
+        timeGetDevCaps(&timeCaps, sizeof(timeCaps));
+        timeBeginPeriod(timeCaps.wPeriodMin);
+    }
+        
         /// INITIALIZE BASE MODULE
 
         __ctbase = LocalAlloc(0, sizeof(*__ctbase));

@@ -107,8 +107,9 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 		SPIN_END /= CLOCK_FREQUENCY_MSEC;
 
 		CTLockLeave(thread->threadLock);
-
-		Sleep(max(0, thread->threadSpinIntervalMsec - (SPIN_END - SPIN_START)));
+		
+		INT64 SLEEP_TIME = max(0, thread->threadSpinIntervalMsec - (SPIN_END - SPIN_START));
+		Sleep(SLEEP_TIME);
 
 	}
 
