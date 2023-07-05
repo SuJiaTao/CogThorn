@@ -28,6 +28,9 @@
     <Filter Include="Source Files\Logging">
       <UniqueIdentifier>{21e711f4-aefa-482b-bcfd-b95c10939904}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Thread">
+      <UniqueIdentifier>{bef532d4-505c-42bd-bbdc-1ecc672c9439}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h">
@@ -43,6 +46,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ct_logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ct_thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -100,6 +106,9 @@
     </ClCompile>
     <ClCompile Include="ct_logging.c">
       <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_thread.c">
+      <Filter>Source Files\Thread</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

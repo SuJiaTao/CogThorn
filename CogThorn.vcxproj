@@ -23,6 +23,7 @@
     <ClInclude Include="ct_gfx.h" />
     <ClInclude Include="ct_logging.h" />
     <ClInclude Include="ct_math.h" />
+    <ClInclude Include="ct_thread.h" />
     <ClInclude Include="ct_window.h" />
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +44,7 @@
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />
     <ClCompile Include="ct_math_vector.c" />
+    <ClCompile Include="ct_thread.c" />
     <ClCompile Include="ct_window.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
