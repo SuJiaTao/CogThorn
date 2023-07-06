@@ -44,7 +44,7 @@ CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader) {
 		return FALSE;
 	}
 
-	CTGFXFree(pSubShader);
+	CTGFXFree(subShader);
 	*pSubShader = FALSE;
 	CTLockLeave(__ctdata.sys.rendering.lock);
 
@@ -63,11 +63,17 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	PVOID			initInput
 ) {
 	
+	if (gProc == NULL) {
+		CTErrorSetBadObject("CTGraphicsObjectCreate failed: gProc was NULL");
+		return NULL;
+	}
+
 	CTLockEnter(__ctdata.sys.rendering.lock);
 	CTDynListLock(__ctdata.sys.rendering.objList);
 
 	PCTGO obj	= CTDynListAdd(__ctdata.sys.rendering.objList);
 	ZeroMemory(obj, sizeof(*obj));
+	obj->destroySignal		= FALSE;
 	obj->lock				= CTLockCreate();
 	obj->gData				= CTAlloc(max(4, gDataSizeBytes));
 	obj->gDataSizeBytes		= gDataSizeBytes;
@@ -96,14 +102,19 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 }
 
 CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject) {
+
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
 	if (pGObject == NULL) {
 		CTErrorSetBadObject("CTGraphicsObjectDestroy failed: pGObject was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
 	PCTGO object = *pGObject;
 	if (object == NULL) {
 		CTErrorSetBadObject("CTGraphicsObjectDestroy failed: object was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
@@ -111,28 +122,43 @@ CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject) {
 	object->destroySignal = TRUE;
 	CTGraphicsObjectUnlock(object);
 
+	CTLockDestroy(&object->lock);
+	CTFree(object->gData);
+
 	*pGObject = NULL;
+
+	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
 }
 
 CTCALL	BOOL	CTGraphicsObjectLock(PCTGO gObject) {
+	
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
 	if (gObject == NULL) {
 		CTErrorSetBadObject("CTGraphicsObjectLock failed: gObject was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
-	CTLockEnter(gObject->lock);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
+
 }
 
 CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject) {
+
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
 	if (gObject == NULL) {
 		CTErrorSetBadObject("CTGraphicsObjectUnlock failed: gObject was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
-	CTLockLeave(gObject->lock);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
+
 }
 
 CTCALL	PCTCamera	CTCameraCreate(
@@ -164,9 +190,12 @@ CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera) {
 		return FALSE;
 	}
 
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
 	PCTCamera camera = *pCamera;
 	if (camera == NULL) {
 		CTErrorSetBadObject("CTCameraDestroy failed: camera was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
@@ -175,26 +204,38 @@ CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera) {
 	CTCameraUnlock(camera);
 
 	*pCamera = NULL;
+
+	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
 }
 
 CTCALL	BOOL		CTCameraLock(PCTCamera camera) {
+
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
 	if (camera == NULL) {
 		CTErrorSetBadObject("CTCameraLock failed: camera was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
 	CTLockEnter(camera->lock);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
+
 }
 
 CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
 	if (camera == NULL) {
 		CTErrorSetBadObject("CTCameraUnlock failed: camera was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
 	CTLockLeave(camera->lock);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
 }
 
@@ -205,15 +246,13 @@ void __CTRenderThreadProc(
 	PVOID		input
 ) {
 
-	printf("GFXtpreason: %d\n", reason);
-
 	switch (reason)
 	{
 
 	case CT_THREADPROC_REASON_INIT:
 
 		__ctdata.sys.rendering.lock			= CTLockCreate();
-		__ctdata.sys.rendering.logStream	= CTLogStreamCreate("$gfxlog.log", NULL, NULL);
+		__ctdata.sys.rendering.logStream	= CTLogStreamCreate("$renderlog.txt", NULL, NULL);
 		__ctdata.sys.rendering.objList		= CTDynListCreate(
 			sizeof(CTGO),
 			CT_RTHREAD_GOBJ_NODE_SIZE
@@ -225,30 +264,29 @@ void __CTRenderThreadProc(
 
 		CTLogImportant(
 			__ctdata.sys.rendering.logStream,
-			"GFX Handler Starting Up..."
+			"Rendering System Starting Up..."
 		);
 
 		break;
 
 	case CT_THREADPROC_REASON_SPIN:
 		
+		CTLockEnter(__ctdata.sys.rendering.lock);
+
 		printf("GFX spin %d\n",
 			thread->threadSpinCount);
-		CTLogInfo(
-			__ctdata.sys.rendering.logStream,
-			"GFX spin %d",
-			thread->threadSpinCount
-		);
+
+
+
+		CTLockLeave(__ctdata.sys.rendering.lock);
 
 		break;
 
 	case CT_THREADPROC_REASON_EXIT:
 
-		puts("GFX: exiting...");
-
 		CTLogImportant(
 			__ctdata.sys.rendering.logStream,
-			"GFX Handler Shutting Down..."
+			"Rendering System Shutting Down..."
 		);
 
 		CTLockEnter(__ctdata.sys.rendering.lock);
