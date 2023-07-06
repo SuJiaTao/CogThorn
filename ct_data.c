@@ -9,6 +9,8 @@
 #include "ct_data.h"
 #include "ct_logging.h"
 
+#include <stdio.h>
+
 CTCALL	BOOL	CogThornInit(void) {
 
 	if (__ctdata.initialized == TRUE)
@@ -42,7 +44,12 @@ CTCALL	BOOL	CogThornInit(void) {
 
 	__ctdata.logging.startTimeMsecs = GetTickCount64();
 	__ctdata.logging.lock			= CTLockCreate();
-	__ctdata.logging.killSignal		= FALSE;
+	__ctdata.logging.killSignal = CreateEventA(
+		NULL,
+		FALSE,
+		FALSE,
+		NULL
+	);
 	__ctdata.logging.logWriteQueue	= CTDynListCreate(
 		sizeof(CTLogEntry),
 		CT_LOGGING_QUEUE_NODE_SIZE
@@ -80,13 +87,12 @@ CTCALL	BOOL	CogThornTerminate(void) {
 	///							  CLEANUP LOGGING
 	//////////////////////////////////////////////////////////////////////////////
 
-	CTLockEnter(__ctdata.logging.lock);
-	__ctdata.logging.killSignal = TRUE;
-	CTLockLeave(__ctdata.logging.lock);
+	SetEvent(__ctdata.logging.killSignal);
 	WaitForSingleObject(__ctdata.logging.logWriteThread, INFINITE);
 
 	CTDynListDestroy(&__ctdata.logging.logWriteQueue);
 	CTLockDestroy(&__ctdata.logging.lock);
+	CloseHandle(__ctdata.logging.killSignal);
 
 	//////////////////////////////////////////////////////////////////////////////
 	///							  CLEANUP GRAPHICS

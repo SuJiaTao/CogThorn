@@ -37,7 +37,7 @@ struct {
 		PCTLock		lock;
 		HANDLE		logWriteThread;
 		PCTDynList	logWriteQueue;
-		BOOL		killSignal;
+		HANDLE		killSignal;
 	} logging;
 
 } __ctdata;	// INSTANCE

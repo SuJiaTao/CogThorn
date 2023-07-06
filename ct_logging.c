@@ -10,7 +10,6 @@
 #include "ct_logging.h"
 
 #include <stdio.h>
-#include <interlockedapi.h>
 
 DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
@@ -29,8 +28,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	/// 
 	///		CLEAR QUEUE
 	///		
-	///		if (NOT kill signal)
-	///			LEAVE LOCK
+	///		LEAVE LOCK
 	/// 
 	///		for (all in write list)
 	///			if (file is NULL)
@@ -77,9 +75,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 		CTIteratorDestroy(&logQueueIter);
 		CTDynListClear(__ctdata.logging.logWriteQueue);
 
-		if (__ctdata.logging.killSignal == FALSE) {
-			CTLockLeave(__ctdata.logging.lock);
-		}
+		CTLockLeave(__ctdata.logging.lock);
 
 		PCTIterator writeBufferIter = CTIteratorCreate(logWriteBuffer);
 		PCTFile		logFile			= NULL;
@@ -160,8 +156,9 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 			CTFree(logFmtBuffer);
 
-			InterlockedAdd64(&LOG_ENTRY->logStream->logsOutstanding, -1);
-
+			CTLockEnter(__ctdata.logging.lock);
+			LOG_ENTRY->logStream->logsOutstanding--;
+			CTLockLeave(__ctdata.logging.lock);
 		}
 
 		if (logFile != NULL)
@@ -172,7 +169,13 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 		SPIN_TIME_END = GetTickCount64();
 
-		if (__ctdata.logging.killSignal == TRUE) {
+		DWORD killSignalResult = WaitForSingleObject(
+			__ctdata.logging.killSignal,
+			0
+		);
+
+		if (killSignalResult == WAIT_OBJECT_0 && 
+			__ctdata.logging.logWriteQueue->elementsUsedCount == 0) {
 			CTDynListDestroy(&logWriteBuffer);
 			ExitThread(ERROR_SUCCESS);
 		}
@@ -322,7 +325,7 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 	pentry->logNumber		= stream->logCount++;
 	pentry->logTimeMsecs	= GetTickCount64() - __ctdata.logging.startTimeMsecs;
 
-	InterlockedAdd64(&stream->logsOutstanding, 1);
+	stream->logsOutstanding++;
 
 	strcpy_s(
 		pentry->message,
