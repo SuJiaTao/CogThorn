@@ -95,7 +95,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	obj->transform.pos		= position;
 	obj->transform.rot		= rotation;
 	obj->transform.scl		= scale;
-	obj->transform.layer	= layer;
+	obj->transform.depth	= layer;
 	obj->visible			= TRUE;
 	obj->gProc				= gProc;
 
@@ -257,16 +257,145 @@ static void __HCTRenderThreadPrimShader(
 	P__CTRTShaderData	data
 ) {
 
+	BOOL applyTransform = TRUE;
 
+	if (data->object->subShader != NULL) {
+		applyTransform = !(data->object->subShader->disableGTransform);
+	}
 
+	if (data->object->subShader != NULL) {
+		if (data->object->subShader->subPrimShader != NULL) {
+			data->object->subShader->subPrimShader(
+				ctx,
+				prim,
+				data->object->gData
+			);
+		}
+	}
+
+	if (applyTransform == TRUE) {
+		CTMatrix tform = CTMatrixTransform(
+			CTMatrixIdentity(),
+			data->object->transform.pos,
+			data->object->transform.scl,
+			data->object->transform.rot
+		);
+
+		prim->vertex = CTMatrixApply(
+			tform,
+			prim->vertex
+		);
+	}
+
+	CTMatrix camTform = CTMatrixIdentity();
+	camTform = CTMatrixScale(
+		camTform, 
+		data->camera->transform.scl
+	);
+	camTform = CTMatrixRotate(
+		camTform, 
+		data->camera->transform.rot * -1.0f
+	);
+	camTform = CTMatrixTranslate(
+		camTform, 
+		CTVectCreate(
+			data->camera->transform.pos.x * -1.0f,
+			data->camera->transform.pos.y * -1.0f
+		)
+	);
+
+	prim->vertex = CTMatrixApply(
+		camTform,
+		prim->vertex
+	);
 }
 
-static void __HCTRenderThreadPixShader(
+static BOOL __HCTRenderThreadPixShader(
 	CTPixCtx			ctx,
 	PCTPixel			pixel,
 	P__CTRTShaderData	data
 ) {
+	BOOL applyDither	= TRUE;
+	BOOL applyOutline	= TRUE;
+	BOOL applyTint		= TRUE;
+	
+	if (data->object->subShader != NULL) {
+		applyDither		= !(data->object->subShader->disableGDither);
+		applyOutline	= !(data->object->subShader->disableGOutline);
+		applyTint		= !(data->object->subShader->disableGTint);
+	}
 
+	if (ctx.drawMethod == CT_DRAW_METHOD_LINES_CLOSED &&
+		applyOutline == FALSE)
+		return FALSE;
+
+	CTColor pixColor = CTColorCreate(255, 255, 255, 255);
+	if (data->object->texture != NULL) {
+		pixColor = CTSSample(
+			data->object->texture,
+			ctx.UV,
+			CTS_SAMPLE_METHOD_CUTOFF
+		);
+	}
+
+	if (applyTint == TRUE) {
+		// note: 0.003921568627f is a division by 255
+		pixColor.r = 
+			(BYTE)((FLOAT)pixColor.r * (FLOAT)data->object->tintColor.r * 0.003921568627f);
+		pixColor.g =
+			(BYTE)((FLOAT)pixColor.g * (FLOAT)data->object->tintColor.g * 0.003921568627f);
+		pixColor.b =
+			(BYTE)((FLOAT)pixColor.b * (FLOAT)data->object->tintColor.b * 0.003921568627f);
+		pixColor.a =
+			(BYTE)((FLOAT)pixColor.a * (FLOAT)data->object->tintColor.a * 0.003921568627f);
+	}
+
+	// custom dithering alogrithm
+	if (applyDither == TRUE &&
+		pixColor.a  >= 250) {
+		
+		if (pixColor.a < 0.03)
+			return FALSE;
+
+		FLOAT normalizedAlpha = (FLOAT)pixColor.a * 0.003921568627f;
+
+		if (pixColor.a < 128) {
+
+			UINT32 discardInterval = (1.0f / normalizedAlpha);
+			UINT32 step = pixel->screenCoord.x + 
+				(pixel->screenCoord.y * (discardInterval >> 1)) + 
+				(pixel->screenCoord.y * (discardInterval >> 3));
+			if (step % discardInterval != 0) 
+				return FALSE;
+			
+		}
+		else
+		{
+
+			UINT32 discardInterval = (1.0f / (1.0f - normalizedAlpha));
+			UINT32 step = pixel->screenCoord.x +
+				(pixel->screenCoord.y * (discardInterval >> 1)) +
+				(pixel->screenCoord.y * (discardInterval >> 3));
+			if (step % discardInterval == 0)
+				return FALSE;
+
+		}
+
+		pixColor.a = 255;
+
+	}
+
+	pixel->color = pixColor;
+
+	if (data->object->subShader != NULL) {
+		if (data->object->subShader->subPixShader != NULL) {
+			data->object->subShader->subPixShader(
+				ctx,
+				pixel,
+				data->object->gData
+			);
+		}
+	}
 }
 
 static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
@@ -281,6 +410,7 @@ static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
 
 	/// DRAW OBJECT OUTLINE
 	if (object->outlineSizePixels != 0) {
+
 		__ctdata.sys.rendering.shader->lineSizePixels = 
 			max(
 				CT_SHADER_LINESIZE_MIN, 
@@ -289,7 +419,27 @@ static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
 					object->outlineSizePixels
 				)
 			);
+
+		CTDraw(
+			CT_DRAW_METHOD_LINES_OPEN,
+			shaderData.camera->renderTarget,
+			shaderData.object->mesh,
+			__ctdata.sys.rendering.shader,
+			&shaderData,
+			shaderData.object->transform.depth
+		);
+
 	}
+
+	/// DRAW OBJECT
+	CTDraw(
+		CT_DRAW_METHOD_FILL,
+		shaderData.camera->renderTarget,
+		shaderData.object->mesh,
+		__ctdata.sys.rendering.shader,
+		&shaderData,
+		shaderData.object->transform.depth
+	);
 }
 
 void __CTRenderThreadProc(

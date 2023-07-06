@@ -630,6 +630,8 @@ CTCALL	BOOL		CTDraw(
 		return FALSE;
 	}
 
+	CTFrameBufferLock(frameBuffer);
+
 	/// SUMMARY:
 	/// create copy of shader input
 	/// create copy of mesh primitives
@@ -787,11 +789,13 @@ DrawFuncSucess:
 
 	CTGFXFree(shaderInputCopy);
 	CTGFXFree(processedPrimList);
+	CTFrameBufferUnlock(frameBuffer);
 	return TRUE;
 
 DrawFuncFailure:
 
 	CTGFXFree(shaderInputCopy);
 	CTGFXFree(processedPrimList);
+	CTFrameBufferUnlock(frameBuffer);
 	return FALSE;
 }

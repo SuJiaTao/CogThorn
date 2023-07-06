@@ -75,7 +75,7 @@ typedef struct CTTransform {
 	CTVect	pos;
 	CTVect	scl;
 	FLOAT	rot;
-	FLOAT	layer;
+	FLOAT	depth;
 } CTTransform, *PCTTransform, CTTForm, *PCTTForm;
 
 typedef struct CTGObject {

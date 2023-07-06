@@ -173,8 +173,8 @@ CTCALL	BOOL		CTDraw(
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CTS_SAMPLE_METHOD_CLAMP			0
-#define CTS_SAMPLE_METHOD_CLAMP_TO_EDGE	1
+#define CTS_SAMPLE_METHOD_CLAMP_TO_EDGE	0
+#define CTS_SAMPLE_METHOD_CUTOFF		1
 #define CTS_SAMPLE_METHOD_REPEAT		2
 CTCALL __forceinline CTColor CTSSample(PCTFB texture, CTVect UV, UINT32 sampleMethod) {
 
@@ -191,12 +191,12 @@ CTCALL __forceinline CTColor CTSSample(PCTFB texture, CTVect UV, UINT32 sampleMe
 	switch (sampleMethod)
 	{
 
-	case CTS_SAMPLE_METHOD_CLAMP_TO_EDGE:
+	case CTS_SAMPLE_METHOD_CUTOFF:
 
 		if (UV.x < 0.0f || UV.x > 1.0f || UV.y < 0.0f || UV.y > 1.0f)
 			goto __CTSSampleComplete;
 
-	case CTS_SAMPLE_METHOD_CLAMP:
+	case CTS_SAMPLE_METHOD_CLAMP_TO_EDGE:
 
 		UV.x = min(0.999999f, max(UV.x, 0.0f));
 		UV.y = min(0.999999f, max(UV.y, 0.0f));
