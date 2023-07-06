@@ -751,28 +751,28 @@ CTCALL	BOOL		CTDraw(
 
 	case CT_DRAW_METHOD_WIREFRAME:
 
-		if (mesh->primCount <= 2) {
-			CTErrorSetFunction("CTDraw failed: cannot draw a wireframe with only 2 verticies");
+		if (mesh->primCount < 2) {
+			CTErrorSetFunction("CTDraw failed: cannot draw a wireframe with only 1 vertex");
 			goto DrawFuncFailure;
 		}
 
-		for (UINT32 primIndex = 0; primIndex < mesh->primCount - 2; primIndex++) {
+		for (UINT32 primIndex = 1; primIndex < mesh->primCount - 1; primIndex++) {
 			__HCTDrawLine(
 				processedPrimList + 0,
-				processedPrimList + primIndex + 1,
+				processedPrimList + primIndex,
 				&drawInfo
 			);
 			__HCTDrawLine(
-				processedPrimList + 0,
-				processedPrimList + primIndex + 2,
-				&drawInfo
-			);
-			__HCTDrawLine(
+				processedPrimList + primIndex + 0,
 				processedPrimList + primIndex + 1,
-				processedPrimList + primIndex + 2,
 				&drawInfo
 			);
 		}
+		__HCTDrawLine(
+			processedPrimList + 0,
+			processedPrimList + (mesh->primCount - 1),
+			&drawInfo
+		);
 
 		break;
 
