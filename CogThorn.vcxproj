@@ -41,6 +41,7 @@
     <ClCompile Include="ct_gfx_mesh.c" />
     <ClCompile Include="ct_gfx_point.c" />
     <ClCompile Include="ct_gfx_shader.c" />
+    <ClCompile Include="ct_g_handler.c" />
     <ClCompile Include="ct_logging.c" />
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />

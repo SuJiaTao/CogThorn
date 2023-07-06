@@ -34,6 +34,9 @@
     <Filter Include="Header Files\Engine">
       <UniqueIdentifier>{812f9ed7-29cc-4b48-819a-d12f1c32b9d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{45b6caf9-899d-419d-8043-9acc78eb652c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_base.h">
@@ -115,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="ct_thread.c">
       <Filter>Source Files\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_g_handler.c">
+      <Filter>Source Files\Engine</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

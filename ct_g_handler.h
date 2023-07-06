@@ -13,6 +13,7 @@
 #include "ct_math.h"
 #include "ct_gfx.h"
 #include "ct_window.h"
+#include "ct_logging.h"
 #include "ct_thread.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -81,7 +82,7 @@ typedef struct CTTransform {
 typedef struct CTGObject {
 	BOOL			visible;
 	BOOL			destroySignal;
-	CTLock			lock;
+	PCTLock			lock;
 	UINT32			outlineSizePixels;
 	PCTMesh			mesh;
 	PCTSubShader	subShader;
@@ -90,6 +91,7 @@ typedef struct CTGObject {
 	CTTForm			transform;
 	SIZE_T			gDataSizeBytes;
 	PVOID			gData;
+	PCTFUNCGOPROC	gProc;
 } CTGObject, *PCTGObject, CTGO, *PCTGO;
 
 CTCALL	PCTGO	CTGraphicsObjectCreate(
@@ -99,6 +101,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	FLOAT			layer,
 	PCTMesh			mesh,
 	PCTSubShader	subShader,
+	PCTFUNCGOPROC	gProc,
 	SIZE_T			gDataSizeBytes,
 	PVOID			initInput
 );
@@ -143,9 +146,11 @@ void __CTGFXHandlerThreadProc(
 #define CT_G_HANDLER_GOBJ_NODE_SIZE		1024
 #define CT_G_HANDLER_CAMERA_NODE_SIZE	32
 typedef struct CTModuleGFXHandler {
-	PCTThread	thread;
-	PCTDynList	gObjList;
-	PCTDynList	cameraList;
+	PCTLock			lock;
+	PCTThread		thread;
+	PCTLogStream	gLogStream;
+	PCTDynList		gObjList;
+	PCTDynList		cameraList;
 } CTModuleGFXHandler, *PCTModuleGFXHandler;
 PCTModuleGFXHandler __ctghandler;		// INSTANCE
 
