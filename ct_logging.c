@@ -231,9 +231,16 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook,
 
 }
 
-CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream) {
+CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream* pStream) {
+
+	if (pStream == NULL) {
+		CTErrorSetBadObject("CTLogStreamDestroy failed: pStream was NULL");
+		return FALSE;
+	}
 
 	CTLockEnter(__ctlog->lock);
+
+	PCTLogStream stream = *pStream;
 
 	if (stream == NULL) {
 
@@ -265,6 +272,8 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream stream) {
 	CTLockEnter(__ctlog->lock);
 	CTFree(stream);
 	CTLockLeave(__ctlog->lock);
+
+	*pStream = NULL;
 	return TRUE;
 
 }

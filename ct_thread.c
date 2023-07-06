@@ -179,9 +179,9 @@ CTCALL	BOOL		CTThreadDestroy(PCTThread* pThread) {
 	thread->killSignal = TRUE;
 	CTLockLeave(thread->threadLock);
 
-	*pThread = NULL;
 	WaitForSingleObject(thread->hThread, INFINITE);
 
+	*pThread = NULL;
 	return TRUE;
 }
 
