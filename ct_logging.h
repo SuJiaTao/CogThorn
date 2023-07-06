@@ -12,6 +12,8 @@
 #include "ct_base.h"
 #include <varargs.h>
 
+#define CT_LOGGING_QUEUE_NODE_SIZE 1024
+
 //////////////////////////////////////////////////////////////////////////////
 ///
 ///							LOGGING THREAD PROC
@@ -68,23 +70,5 @@ CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message
 	CTLogFormatted(stream, CT_LOG_ENTRY_TYPE_WARNING, msg, __VA_ARGS__ )
 #define CTLogFailure(stream, msg, ...)		\
 	CTLogFormatted(stream, CT_LOG_ENTRY_TYPE_FAILURE, msg, __VA_ARGS__ )
-
-//////////////////////////////////////////////////////////////////////////////
-///
-///							LOGGING MODULE INSTANCE
-/// 
-//////////////////////////////////////////////////////////////////////////////
-
-#define CT_LOGGING_QUEUE_NODE_SIZE	1024
-typedef struct CTModuleLogging {
-
-	INT64		startTimeMsecs;
-	PCTLock		lock;
-	HANDLE		logWriteThread;
-	PCTDynList	logWriteQueue;
-	BOOL		killSignal;
-
-} CTModuleLogging, *PCTModuleLogging;
-PCTModuleLogging __ctlog;			/// INSTANCE ///
 
 #endif

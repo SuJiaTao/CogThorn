@@ -22,8 +22,6 @@ typedef struct __CTThreadTaskData {
 
 static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 
-	printf("threadproc start...\n");
-
 	/// SUMMARY:
 	/// call thread init
 	/// loop (forever)

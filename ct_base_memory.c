@@ -6,16 +6,17 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#include "ct_data.h"
 #include "ct_base.h"
 
 #include <intrin.h>
 
 CTCALL	PVOID	CTAlloc(SIZE_T sizeBytes) {
 
-	__ctbase->heapAllocBytes += sizeBytes;
-	__ctbase->heapAllocCount += 1;
+	__ctdata.base.heapAllocBytes += sizeBytes;
+	__ctdata.base.heapAllocCount += 1;
 
-	PVOID ptr = HeapAlloc(__ctbase->heap, 0, sizeBytes);
+	PVOID ptr = HeapAlloc(__ctdata.base.heap, 0, sizeBytes);
 	__stosb(ptr, 0, sizeBytes);
 
 	return ptr;
@@ -23,16 +24,16 @@ CTCALL	PVOID	CTAlloc(SIZE_T sizeBytes) {
 
 CTCALL	void	CTFree(PVOID ptr) {
 
-	__ctbase->heapAllocBytes -= HeapSize(__ctbase->heap, 0, ptr);
-	__ctbase->heapAllocCount -= 1;
+	__ctdata.base.heapAllocBytes -= HeapSize(__ctdata.base.heap, 0, ptr);
+	__ctdata.base.heapAllocCount -= 1;
 
-	HeapFree(__ctbase->heap, 0, ptr);
+	HeapFree(__ctdata.base.heap, 0, ptr);
 }
 
 CTCALL	SIZE_T	CTAllocCount(void) {
-	return __ctbase->heapAllocCount;
+	return __ctdata.base.heapAllocCount;
 }
 
 CTCALL	SIZE_T	CTAllocSizeBytes(void) {
-	return __ctbase->heapAllocBytes;
+	return __ctdata.base.heapAllocBytes;
 }

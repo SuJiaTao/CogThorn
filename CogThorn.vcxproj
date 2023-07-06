@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ct_data.h" />
     <ClInclude Include="ct_g_handler.h" />
     <ClInclude Include="ct_base.h" />
     <ClInclude Include="ct_gfx.h" />
@@ -33,7 +34,6 @@
     <ClCompile Include="ct_base_file.c" />
     <ClCompile Include="ct_base_lock.c" />
     <ClCompile Include="ct_base_memory.c" />
-    <ClCompile Include="ct_dllmain.c" />
     <ClCompile Include="ct_gfx_color.c" />
     <ClCompile Include="ct_gfx_draw.c" />
     <ClCompile Include="ct_gfx_framebuffer.c" />

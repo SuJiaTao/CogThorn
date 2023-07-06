@@ -139,20 +139,4 @@ CTCALL	PCTIterator	CTIteratorCreate(PCTDynList list);
 CTCALL	BOOL		CTIteratorDestroy(PCTIterator* pIterator);
 CTCALL	PVOID		CTIteratorIterate(PCTIterator iterator);
 
-//////////////////////////////////////////////////////////////////////////////
-///
-///								BASE MODULE INSTANCE
-/// 
-//////////////////////////////////////////////////////////////////////////////
-
-typedef struct CTModuleBase {
-	HANDLE					heap;
-	SIZE_T					heapAllocCount;
-	SIZE_T					heapAllocBytes;
-	CRITICAL_SECTION		errorLock;
-	CTErrMsg				lastError;
-	PCTErrMsgCallbackNode	errorCallbackList;
-} CTModuleBase, *PCTModuleBase;
-PCTModuleBase __ctbase;	/// INSTANCE ///
-
 #endif

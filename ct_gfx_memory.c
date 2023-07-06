@@ -6,11 +6,13 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#include "ct_data.h"
 #include "ct_gfx.h"
+
 #include <intrin.h>
 
 CTCALL	PVOID		CTGFXAlloc(SIZE_T size) {
-	PVOID ptr = HeapAlloc(__ctgfx->heap, 0, size);
+	PVOID ptr = HeapAlloc(__ctdata.gfx.gfxHeap, 0, size);
 
 	if (ptr == NULL) {
 		CTErrorSetFunction("CTGFXAlloc failed: heap error");
@@ -26,6 +28,6 @@ CTCALL	BOOL		CTGFXFree(PVOID block) {
 		return FALSE;
 	}
 
-	HeapFree(__ctgfx->heap, 0, block);
+	HeapFree(__ctdata.gfx.gfxHeap, 0, block);
 	return TRUE;
 }

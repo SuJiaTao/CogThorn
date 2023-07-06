@@ -203,6 +203,8 @@ void __CTGFXHandlerThreadProc(
 	PVOID		input
 ) {
 
+	printf("GFXtpreason: %d\n", reason);
+
 	switch (reason)
 	{
 
@@ -240,18 +242,18 @@ void __CTGFXHandlerThreadProc(
 
 	case CT_THREADPROC_REASON_EXIT:
 
+		puts("GFX: exiting...");
+
 		CTLogImportant(
 			__ctghandler->logStream,
 			"GFX Handler Shutting Down..."
 		);
 
-		printf("gfxh log complete...\n");
-
 		CTLockEnter(__ctghandler->lock);
 		CTLockDestroy(&__ctghandler->lock);
-		CTLogStreamDestroy(&__ctghandler->logStream);
 		CTDynListDestroy(&__ctghandler->objList);
 		CTDynListDestroy(&__ctghandler->cameraList);
+		CTLogStreamDestroy(&__ctghandler->logStream);
 
 		break;
 

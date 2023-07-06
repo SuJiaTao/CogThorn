@@ -6,6 +6,7 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#include "ct_data.h"
 #include "ct_base.h"
 
 #include <stdio.h>
@@ -13,13 +14,13 @@
 
 CTCALL	void		CTErrorSet(PCHAR message, DWORD type) {
 
-	EnterCriticalSection(&__ctbase->errorLock);
+	EnterCriticalSection(&__ctdata.base.errorLock);
 
 	/// SUMMARY:
 	/// copies message and severity to global last error struct
 	/// then loops through list of error callbacks and calls them
 
-	PCTErrMsg perr = &__ctbase->lastError;
+	PCTErrMsg perr = &__ctdata.base.lastError;
 	__stosb(
 		perr->message,
 		0,
@@ -33,38 +34,38 @@ CTCALL	void		CTErrorSet(PCHAR message, DWORD type) {
 	perr->type		= type;
 	perr->win32err	= GetLastError();
 
-	PCTErrMsgCallbackNode node = __ctbase->errorCallbackList;
+	PCTErrMsgCallbackNode node = __ctdata.base.errorCallbackList;
 	while (node != NULL) {
 
 		if (node->func != NULL)
-			node->func(__ctbase->lastError);
+			node->func(__ctdata.base.lastError);
 
 		node = node->next;
 
 	}
 
-	LeaveCriticalSection(&__ctbase->errorLock);
+	LeaveCriticalSection(&__ctdata.base.errorLock);
 }
 
 CTCALL	CTErrMsg	CTErrorGet(void) {
-	EnterCriticalSection(&__ctbase->errorLock);
-	CTErrMsg msg = __ctbase->lastError;
-	LeaveCriticalSection(&__ctbase->errorLock);
+	EnterCriticalSection(&__ctdata.base.errorLock);
+	CTErrMsg msg = __ctdata.base.lastError;
+	LeaveCriticalSection(&__ctdata.base.errorLock);
 	return msg;
 }
 
 CTCALL	void		CTErrorAddCallback(PCTFUNCERRORCALLBACK pfErrCallback) {
-	EnterCriticalSection(&__ctbase->errorLock);
+	EnterCriticalSection(&__ctdata.base.errorLock);
 
 	/// SUMMARY:
 	/// inserts new callback node as first element of callback list
 	
-	PCTErrMsgCallbackNode oldFirstNode = __ctbase->errorCallbackList;
+	PCTErrMsgCallbackNode oldFirstNode = __ctdata.base.errorCallbackList;
 	PCTErrMsgCallbackNode newFirstNode = CTAlloc(sizeof(*newFirstNode));
 
-	__ctbase->errorCallbackList	= newFirstNode;
+	__ctdata.base.errorCallbackList	= newFirstNode;
 	newFirstNode->func			= pfErrCallback;
 	newFirstNode->next			= oldFirstNode;
 
-	LeaveCriticalSection(&__ctbase->errorLock);
+	LeaveCriticalSection(&__ctdata.base.errorLock);
 }

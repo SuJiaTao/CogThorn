@@ -6,6 +6,7 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#include "ct_data.h"
 #include "ct_logging.h"
 
 #include <stdio.h>
@@ -60,24 +61,24 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 		INT64 SPIN_TIME_TOTAL = SPIN_TIME_END - SPIN_TIME_START;
 
-		if (__ctlog->logWriteQueue->elementsUsedCount == 0) {
+		if (__ctdata.logging.logWriteQueue->elementsUsedCount == 0) {
 			Sleep(max(0, CT_LOGGING_SLEEP_INTERVAL_MSECS - SPIN_TIME_TOTAL));
 		}
 
 		SPIN_TIME_START = GetTickCount64();
 
-		CTLockEnter(__ctlog->lock);
+		CTLockEnter(__ctdata.logging.lock);
 
-		PCTIterator logQueueIter = CTIteratorCreate(__ctlog->logWriteQueue);
+		PCTIterator logQueueIter = CTIteratorCreate(__ctdata.logging.logWriteQueue);
 		while ((LOG_ENTRY = CTIteratorIterate(logQueueIter)) != NULL) {
 			PCTLogEntry entry = CTDynListAdd(logWriteBuffer);
 			*entry = *LOG_ENTRY;
 		}
 		CTIteratorDestroy(&logQueueIter);
-		CTDynListClear(__ctlog->logWriteQueue);
+		CTDynListClear(__ctdata.logging.logWriteQueue);
 
-		if (__ctlog->killSignal == FALSE) {
-			CTLockLeave(__ctlog->lock);
+		if (__ctdata.logging.killSignal == FALSE) {
+			CTLockLeave(__ctdata.logging.lock);
 		}
 
 		PCTIterator writeBufferIter = CTIteratorCreate(logWriteBuffer);
@@ -171,7 +172,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 		SPIN_TIME_END = GetTickCount64();
 
-		if (__ctlog->killSignal == TRUE) {
+		if (__ctdata.logging.killSignal == TRUE) {
 			CTDynListDestroy(&logWriteBuffer);
 			ExitThread(ERROR_SUCCESS);
 		}
@@ -241,14 +242,14 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream* pStream) {
 		return FALSE;
 	}
 
-	CTLockEnter(__ctlog->lock);
+	CTLockEnter(__ctdata.logging.lock);
 
 	PCTLogStream stream = *pStream;
 
 	if (stream == NULL) {
 
 		CTErrorSetBadObject("CTLogStreamDestroy failed: stream was NULL");
-		CTLockLeave(__ctlog->lock);
+		CTLockLeave(__ctdata.logging.lock);
 
 		return FALSE;
 
@@ -257,7 +258,7 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream* pStream) {
 	if (stream->destroySignal == TRUE) {
 
 		CTErrorSetBadObject("CTLogStreamDestroy failed: stream is already being destroyed");
-		CTLockLeave(__ctlog->lock);
+		CTLockLeave(__ctdata.logging.lock);
 
 		return FALSE;
 
@@ -265,16 +266,16 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream* pStream) {
 
 	stream->destroySignal = TRUE;
 
-	CTLockLeave(__ctlog->lock);
+	CTLockLeave(__ctdata.logging.lock);
 
 	// wait for outstanding count to become 0
 	while (stream->logsOutstanding > 0) {
 		Sleep(CT_LOGSTREAM_DESTROY_SPIN_DELAY);
 	}
 
-	CTLockEnter(__ctlog->lock);
+	CTLockEnter(__ctdata.logging.lock);
 	CTFree(stream);
-	CTLockLeave(__ctlog->lock);
+	CTLockLeave(__ctdata.logging.lock);
 
 	*pStream = NULL;
 	return TRUE;
@@ -283,12 +284,12 @@ CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream* pStream) {
 
 CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 
-	CTLockEnter(__ctlog->lock);
+	CTLockEnter(__ctdata.logging.lock);
 
 	if (stream == NULL) {
 
 		CTErrorSetBadObject("CTLog failed: stream was NULL");
-		CTLockLeave(__ctlog->lock);
+		CTLockLeave(__ctdata.logging.lock);
 
 		return FALSE;
 
@@ -297,7 +298,7 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 	if (message == NULL) {
 
 		CTErrorSetBadObject("CTLog failed: message was NULL");
-		CTLockLeave(__ctlog->lock);
+		CTLockLeave(__ctdata.logging.lock);
 
 		return FALSE;
 
@@ -306,20 +307,20 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 	if (stream->destroySignal == TRUE) {
 
 		CTErrorSetBadObject("CTLogStreamDestroy failed: stream is being destroyed");
-		CTLockLeave(__ctlog->lock);
+		CTLockLeave(__ctdata.logging.lock);
 
 		return FALSE;
 
 	}
 
-	CTDynListLock(__ctlog->logWriteQueue);
+	CTDynListLock(__ctdata.logging.logWriteQueue);
 
-	PCTLogEntry pentry		= CTDynListAdd(__ctlog->logWriteQueue);
+	PCTLogEntry pentry		= CTDynListAdd(__ctdata.logging.logWriteQueue);
 	pentry->logStream		= stream;
 	pentry->logThreadID		= GetThreadId(GetCurrentThread());
 	pentry->logType			= logType;
 	pentry->logNumber		= stream->logCount++;
-	pentry->logTimeMsecs	= GetTickCount64() - __ctlog->startTimeMsecs;
+	pentry->logTimeMsecs	= GetTickCount64() - __ctdata.logging.startTimeMsecs;
 
 	InterlockedAdd64(&stream->logsOutstanding, 1);
 
@@ -329,9 +330,9 @@ CTCALL	BOOL				CTLog(PCTLogStream stream, UINT32 logType, PCHAR message) {
 		message
 	);
 
-	CTDynListUnlock(__ctlog->logWriteQueue);
+	CTDynListUnlock(__ctdata.logging.logWriteQueue);
 
-	CTLockLeave(__ctlog->lock);
+	CTLockLeave(__ctdata.logging.lock);
 
 	return TRUE;
 
