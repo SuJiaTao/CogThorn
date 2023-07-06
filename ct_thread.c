@@ -9,8 +9,6 @@
 #include "ct_base.h"
 #include "ct_thread.h"
 
-#include <stdio.h>
-
 typedef struct __CTThreadInput {
 	PCTThread	thread;
 	PVOID		initUserInput;
@@ -23,6 +21,8 @@ typedef struct __CTThreadTaskData {
 } __CTThreadTaskData, *P__CTThreadTaskData;
 
 static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
+
+	printf("threadproc start...\n");
 
 	/// SUMMARY:
 	/// call thread init
@@ -99,6 +99,7 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 			CTLockDestroy(&thread->threadLock);
 			CTFree(thread->threadData);
 			CTFree(thread);
+			CTFree(threadInput);
 
 			ExitThread(ERROR_SUCCESS);
 
@@ -121,7 +122,8 @@ CTCALL	PCTThread	CTThreadCreate(
 	PCTFUNCTHREADPROC	threadProc,
 	SIZE_T				threadDataSizeBytes,
 	PVOID				threadInitInput,
-	UINT64				spinIntervalMsec
+	UINT64				spinIntervalMsec,
+	BOOL				blockUntilInitComplete
 ) {
 
 	if (threadProc == NULL) {
@@ -160,14 +162,14 @@ CTCALL	PCTThread	CTThreadCreate(
 		NULL
 	);
 
-	WaitForSingleObject(
-		threadInput->initCompleteMsg,
-		INFINITE
-	);
+	if (blockUntilInitComplete == TRUE) {
+		WaitForSingleObject(
+			threadInput->initCompleteMsg,
+			INFINITE
+		);
+	}
 
 	CloseHandle(threadInput->initCompleteMsg);
-
-	CTFree(threadInput);
 
 	return thread;
 }

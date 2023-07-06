@@ -152,8 +152,8 @@ void __CTGFXHandlerThreadProc(
 typedef struct CTModuleGFXHandler {
 	PCTLock			lock;
 	PCTThread		thread;
-	PCTLogStream	gLogStream;
-	PCTDynList		gObjList;
+	PCTLogStream	logStream;
+	PCTDynList		objList;
 	PCTDynList		cameraList;
 } CTModuleGFXHandler, *PCTModuleGFXHandler;
 PCTModuleGFXHandler __ctghandler;		// INSTANCE

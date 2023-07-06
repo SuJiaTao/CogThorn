@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include "ct_g_handler.h"
+#include <stdio.h>
 
 CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPRIM primShader,
@@ -61,9 +62,9 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 ) {
 	
 	CTLockEnter(__ctghandler->lock);
-	CTDynListLock(__ctghandler->gObjList);
+	CTDynListLock(__ctghandler->objList);
 
-	PCTGO obj	= CTDynListAdd(__ctghandler->gObjList);
+	PCTGO obj	= CTDynListAdd(__ctghandler->objList);
 	ZeroMemory(obj, sizeof(*obj));
 	obj->lock				= CTLockCreate();
 	obj->gData				= CTAlloc(max(4, gDataSizeBytes));
@@ -86,7 +87,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 		initInput
 	);
 
-	CTDynListUnlock(__ctghandler->gObjList);
+	CTDynListUnlock(__ctghandler->objList);
 	CTLockLeave(__ctghandler->lock);
 
 	return obj;
@@ -207,13 +208,40 @@ void __CTGFXHandlerThreadProc(
 
 	case CT_THREADPROC_REASON_INIT:
 
+		__ctghandler->lock			= CTLockCreate();
+		__ctghandler->logStream		= CTLogStreamCreate(".cogthorn\\gfxlog.log", NULL, NULL);
+		__ctghandler->objList = CTDynListCreate(
+			sizeof(CTGO),
+			CT_G_HANDLER_GOBJ_NODE_SIZE
+		);
+		__ctghandler->cameraList = CTDynListCreate(
+			sizeof(CTCamera),
+			CT_G_HANDLER_CAMERA_NODE_SIZE
+		);
+
+		CTLogImportant(
+			__ctghandler->logStream,
+			"GFX Handler Starting Up..."
+		);
+
 		break;
 
 	case CT_THREADPROC_REASON_SPIN:
-
+		printf("ghandler spin\n");
 		break;
 
 	case CT_THREADPROC_REASON_EXIT:
+		
+		CTLogImportant(
+			__ctghandler->logStream,
+			"GFX Handler Shutting Down..."
+		);
+
+		CTLockEnter(__ctghandler->lock);
+		CTLockDestroy(&__ctghandler->lock);
+		CTLogStreamDestroy(&__ctghandler->logStream);
+		CTDynListDestroy(&__ctghandler->objList);
+		CTDynListDestroy(&__ctghandler->cameraList);
 
 		break;
 
