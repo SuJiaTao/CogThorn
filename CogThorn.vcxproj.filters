@@ -57,7 +57,7 @@
     <ClInclude Include="ct_thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cts_graphics.h">
+    <ClInclude Include="cts_rendering.h">
       <Filter>Header Files\System</Filter>
     </ClInclude>
     <ClInclude Include="ct_data.h">
@@ -122,7 +122,7 @@
     <ClCompile Include="ct_thread.c">
       <Filter>Source Files\Thread</Filter>
     </ClCompile>
-    <ClCompile Include="cts_graphics.c">
+    <ClCompile Include="cts_rendering.c">
       <Filter>Source Files\System</Filter>
     </ClCompile>
     <ClCompile Include="ct_data.c">

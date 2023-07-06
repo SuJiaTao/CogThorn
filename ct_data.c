@@ -8,6 +8,7 @@
 
 #include "ct_data.h"
 #include "ct_logging.h"
+#include "cts_rendering.h"
 
 #include <stdio.h>
 
@@ -70,6 +71,20 @@ CTCALL	BOOL	CogThornInit(void) {
 	TIMECAPS timeCaps;
 	timeGetDevCaps(&timeCaps, sizeof(timeCaps));
 	timeBeginPeriod(timeCaps.wPeriodMin);
+
+	//////////////////////////////////////////////////////////////////////////////
+	///						   INITIALIZE RENDERING SYSTEM
+	//////////////////////////////////////////////////////////////////////////////
+
+	ZeroMemory(&__ctdata.sys.rendering, sizeof(__ctdata.sys.rendering));
+
+	__ctdata.sys.rendering.thread = CTThreadCreate(
+		__CTRenderThreadProc,
+		NULL,
+		NULL,
+		CT_RTHREAD_SPINTIME_MSEC,
+		TRUE
+	);
 
 	return TRUE;
 

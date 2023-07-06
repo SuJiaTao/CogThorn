@@ -1,12 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////
 ///	
-/// 							<cts_graphics.c>
+/// 							<cts_rendering.c>
 ///								Bailey JT Brown
 ///								2023
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#include "cts_graphics.h"
+#include "cts_rendering.h"
+#include "ct_data.h"
+
 #include <stdio.h>
 
 CTCALL	PCTSubShader	CTSubShaderCreateEx(
@@ -35,16 +37,16 @@ CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader) {
 	}
 	PCTSubShader subShader = *pSubShader;
 	
-	CTLockEnter(__ctghandler->lock);
+	CTLockEnter(__ctdata.sys.rendering.lock);
 	if (subShader == NULL) {
 		CTErrorSetBadObject("CTSubShaderDestroy failed: subShader was NULL");
-		CTLockLeave(__ctghandler->lock);
+		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
 	CTGFXFree(pSubShader);
 	*pSubShader = FALSE;
-	CTLockLeave(__ctghandler->lock);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 
 	return TRUE;
 }
@@ -61,10 +63,10 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	PVOID			initInput
 ) {
 	
-	CTLockEnter(__ctghandler->lock);
-	CTDynListLock(__ctghandler->objList);
+	CTLockEnter(__ctdata.sys.rendering.lock);
+	CTDynListLock(__ctdata.sys.rendering.objList);
 
-	PCTGO obj	= CTDynListAdd(__ctghandler->objList);
+	PCTGO obj	= CTDynListAdd(__ctdata.sys.rendering.objList);
 	ZeroMemory(obj, sizeof(*obj));
 	obj->lock				= CTLockCreate();
 	obj->gData				= CTAlloc(max(4, gDataSizeBytes));
@@ -87,8 +89,8 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 		initInput
 	);
 
-	CTDynListUnlock(__ctghandler->objList);
-	CTLockLeave(__ctghandler->lock);
+	CTDynListUnlock(__ctdata.sys.rendering.objList);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 
 	return obj;
 }
@@ -139,10 +141,10 @@ CTCALL	PCTCamera	CTCameraCreate(
 	FLOAT	rotation,
 	PCTFB	renderTarget
 ) {
-	CTLockEnter(__ctghandler->lock);
-	CTDynListLock(__ctghandler->cameraList);
+	CTLockEnter(__ctdata.sys.rendering.lock);
+	CTDynListLock(__ctdata.sys.rendering.cameraList);
 
-	PCTCamera cam		= CTDynListAdd(__ctghandler->cameraList);
+	PCTCamera cam		= CTDynListAdd(__ctdata.sys.rendering.cameraList);
 	cam->destroySignal	= FALSE;
 	cam->lock			= CTLockCreate();
 	cam->renderTarget	= renderTarget;
@@ -150,8 +152,8 @@ CTCALL	PCTCamera	CTCameraCreate(
 	cam->transform.rot	= rotation;
 	cam->transform.scl	= scale;
 
-	CTDynListUnlock(__ctghandler->cameraList);
-	CTLockLeave(__ctghandler->lock);
+	CTDynListUnlock(__ctdata.sys.rendering.cameraList);
+	CTLockLeave(__ctdata.sys.rendering.lock);
 
 	return cam;
 }
@@ -196,7 +198,7 @@ CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
 	return TRUE;
 }
 
-void __CTGFXHandlerThreadProc(
+void __CTRenderThreadProc(
 	UINT32		reason,
 	PCTThread	thread,
 	PVOID		threadData,
@@ -210,19 +212,19 @@ void __CTGFXHandlerThreadProc(
 
 	case CT_THREADPROC_REASON_INIT:
 
-		__ctghandler->lock			= CTLockCreate();
-		__ctghandler->logStream		= CTLogStreamCreate("$gfxlog.log", NULL, NULL);
-		__ctghandler->objList = CTDynListCreate(
+		__ctdata.sys.rendering.lock			= CTLockCreate();
+		__ctdata.sys.rendering.logStream	= CTLogStreamCreate("$gfxlog.log", NULL, NULL);
+		__ctdata.sys.rendering.objList		= CTDynListCreate(
 			sizeof(CTGO),
-			CT_G_HANDLER_GOBJ_NODE_SIZE
+			CT_RTHREAD_GOBJ_NODE_SIZE
 		);
-		__ctghandler->cameraList = CTDynListCreate(
+		__ctdata.sys.rendering.cameraList = CTDynListCreate(
 			sizeof(CTCamera),
-			CT_G_HANDLER_CAMERA_NODE_SIZE
+			CT_RTHREAD_CAMERA_NODE_SIZE
 		);
 
 		CTLogImportant(
-			__ctghandler->logStream,
+			__ctdata.sys.rendering.logStream,
 			"GFX Handler Starting Up..."
 		);
 
@@ -233,7 +235,7 @@ void __CTGFXHandlerThreadProc(
 		printf("GFX spin %d\n",
 			thread->threadSpinCount);
 		CTLogInfo(
-			__ctghandler->logStream,
+			__ctdata.sys.rendering.logStream,
 			"GFX spin %d",
 			thread->threadSpinCount
 		);
@@ -245,15 +247,15 @@ void __CTGFXHandlerThreadProc(
 		puts("GFX: exiting...");
 
 		CTLogImportant(
-			__ctghandler->logStream,
+			__ctdata.sys.rendering.logStream,
 			"GFX Handler Shutting Down..."
 		);
 
-		CTLockEnter(__ctghandler->lock);
-		CTLockDestroy(&__ctghandler->lock);
-		CTDynListDestroy(&__ctghandler->objList);
-		CTDynListDestroy(&__ctghandler->cameraList);
-		CTLogStreamDestroy(&__ctghandler->logStream);
+		CTLockEnter(__ctdata.sys.rendering.lock);
+		CTLockDestroy(&__ctdata.sys.rendering.lock);
+		CTDynListDestroy(&__ctdata.sys.rendering.objList);
+		CTDynListDestroy(&__ctdata.sys.rendering.cameraList);
+		CTLogStreamDestroy(&__ctdata.sys.rendering.logStream);
 
 		break;
 

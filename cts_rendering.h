@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 ///	
-/// 							<cts_graphics.h>
+/// 							<cts_rendering.h>
 ///								Bailey JT Brown
 ///								2023
 /// 
@@ -134,28 +134,20 @@ CTCALL	BOOL		CTCameraUnlock(PCTCamera camera);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
-///								GRAPHICS HANDLER MODULE
+///						   GRAPHICS HANDLER THREAD LOGIC
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-void __CTGFXHandlerThreadProc(
+#define CT_RTHREAD_SPINTIME_MSEC		(1000 / 40)
+#define CT_RTHREAD_GOBJ_NODE_SIZE		1024
+#define CT_RTHREAD_CAMERA_NODE_SIZE		32
+#define CT_RTHREAD_CLEAN_INTERVAL		200
+
+void __CTRenderThreadProc(
 	UINT32		reason, 
 	PCTThread	thread, 
 	PVOID		threadData, 
 	PVOID		input
 );
-
-#define CT_G_HANDLER_SPINTIME_MSEC		(1000 / 40)
-#define CT_G_HANDLER_GOBJ_NODE_SIZE		1024
-#define CT_G_HANDLER_CAMERA_NODE_SIZE	32
-#define CT_G_HANDLER_CLEAN_INTERVAL		200
-typedef struct CTModuleGFXHandler {
-	PCTLock			lock;
-	PCTThread		thread;
-	PCTLogStream	logStream;
-	PCTDynList		objList;
-	PCTDynList		cameraList;
-} CTModuleGFXHandler, *PCTModuleGFXHandler;
-PCTModuleGFXHandler __ctghandler;		// INSTANCE
 
 #endif

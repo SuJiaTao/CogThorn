@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClInclude Include="CogThorn.h" />
     <ClInclude Include="ct_data.h" />
-    <ClInclude Include="cts_graphics.h" />
+    <ClInclude Include="cts_rendering.h" />
     <ClInclude Include="ct_base.h" />
     <ClInclude Include="ct_gfx.h" />
     <ClInclude Include="ct_logging.h" />
@@ -43,7 +43,7 @@
     <ClCompile Include="ct_gfx_mesh.c" />
     <ClCompile Include="ct_gfx_point.c" />
     <ClCompile Include="ct_gfx_shader.c" />
-    <ClCompile Include="cts_graphics.c" />
+    <ClCompile Include="cts_rendering.c" />
     <ClCompile Include="ct_logging.c" />
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />

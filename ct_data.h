@@ -10,6 +10,8 @@
 #define _CT_DATA_INCLUDE_
 
 #include "ct_base.h"
+#include "ct_logging.h"
+#include "ct_thread.h"
 
 CTCALL	BOOL	CogThornInit(void);
 CTCALL	BOOL	CogThornTerminate(void);
@@ -39,6 +41,18 @@ struct {
 		PCTDynList	logWriteQueue;
 		HANDLE		killSignal;
 	} logging;
+
+	struct {
+
+		struct {
+			PCTLock			lock;
+			PCTThread		thread;
+			PCTLogStream	logStream;
+			PCTDynList		objList;
+			PCTDynList		cameraList;
+		} rendering;
+
+	} sys;
 
 } __ctdata;	// INSTANCE
 
