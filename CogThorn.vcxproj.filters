@@ -31,10 +31,10 @@
     <Filter Include="Source Files\Thread">
       <UniqueIdentifier>{bef532d4-505c-42bd-bbdc-1ecc672c9439}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Engine">
+    <Filter Include="Header Files\System">
       <UniqueIdentifier>{812f9ed7-29cc-4b48-819a-d12f1c32b9d9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Engine">
+    <Filter Include="Source Files\System">
       <UniqueIdentifier>{45b6caf9-899d-419d-8043-9acc78eb652c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -57,8 +57,8 @@
     <ClInclude Include="ct_thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ct_g_handler.h">
-      <Filter>Header Files\Engine</Filter>
+    <ClInclude Include="cts_graphics.h">
+      <Filter>Header Files\System</Filter>
     </ClInclude>
     <ClInclude Include="ct_data.h">
       <Filter>Header Files</Filter>
@@ -119,8 +119,11 @@
     <ClCompile Include="ct_thread.c">
       <Filter>Source Files\Thread</Filter>
     </ClCompile>
-    <ClCompile Include="ct_g_handler.c">
-      <Filter>Source Files\Engine</Filter>
+    <ClCompile Include="cts_graphics.c">
+      <Filter>Source Files\System</Filter>
+    </ClCompile>
+    <ClCompile Include="ct_data.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

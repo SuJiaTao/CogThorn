@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ct_data.h" />
-    <ClInclude Include="ct_g_handler.h" />
+    <ClInclude Include="cts_graphics.h" />
     <ClInclude Include="ct_base.h" />
     <ClInclude Include="ct_gfx.h" />
     <ClInclude Include="ct_logging.h" />
@@ -34,6 +34,7 @@
     <ClCompile Include="ct_base_file.c" />
     <ClCompile Include="ct_base_lock.c" />
     <ClCompile Include="ct_base_memory.c" />
+    <ClCompile Include="ct_data.c" />
     <ClCompile Include="ct_gfx_color.c" />
     <ClCompile Include="ct_gfx_draw.c" />
     <ClCompile Include="ct_gfx_framebuffer.c" />
@@ -41,7 +42,7 @@
     <ClCompile Include="ct_gfx_mesh.c" />
     <ClCompile Include="ct_gfx_point.c" />
     <ClCompile Include="ct_gfx_shader.c" />
-    <ClCompile Include="ct_g_handler.c" />
+    <ClCompile Include="cts_graphics.c" />
     <ClCompile Include="ct_logging.c" />
     <ClCompile Include="ct_math_matrix.c" />
     <ClCompile Include="ct_math_random.c" />

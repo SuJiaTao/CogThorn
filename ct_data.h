@@ -11,8 +11,14 @@
 
 #include "ct_base.h"
 
+CTCALL	BOOL	CogThornInit(void);
+CTCALL	BOOL	CogThornTerminate(void);
+
 struct {
 	
+	BOOL	initialized;
+	DWORD	initThreadID;
+
 	struct {
 		HANDLE					heap;
 		SIZE_T					heapAllocCount;

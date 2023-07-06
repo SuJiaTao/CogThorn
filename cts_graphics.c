@@ -1,12 +1,12 @@
 ///////////////////////////////////////////////////////////////////////////
 ///	
-/// 							<ct_g_handler.c>
+/// 							<cts_graphics.c>
 ///								Bailey JT Brown
 ///								2023
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#include "ct_g_handler.h"
+#include "cts_graphics.h"
 #include <stdio.h>
 
 CTCALL	PCTSubShader	CTSubShaderCreateEx(
