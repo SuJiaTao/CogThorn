@@ -11,6 +11,14 @@
 
 #include <stdio.h>
 
+static void __HCTCallObjectGProc(PCTGO obj, UINT32 reason, PVOID input) {
+	obj->gProc(
+		reason,
+		obj,
+		input
+	);
+}
+
 CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPRIM primShader,
 	PCTSUBSPIX	pixShader,
@@ -89,9 +97,9 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	obj->visible			= TRUE;
 	obj->gProc				= gProc;
 
-	obj->gProc(
-		CT_GPROC_REASON_INIT,
+	__HCTCallObjectGProc(
 		obj,
+		CT_GPROC_REASON_INIT,
 		initInput
 	);
 
@@ -121,9 +129,6 @@ CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject) {
 	CTGraphicsObjectLock(object);
 	object->destroySignal = TRUE;
 	CTGraphicsObjectUnlock(object);
-
-	CTLockDestroy(&object->lock);
-	CTFree(object->gData);
 
 	*pGObject = NULL;
 
@@ -239,6 +244,39 @@ CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
 	return TRUE;
 }
 
+typedef struct __CTRTShaderData {
+	PCTGO		object;
+	PCTCamera	camera;
+} __CTRTShaderData, *P__CTRTShaderData;
+
+static void __HCTRenderThreadPrimShader(
+	CTPrimCtx			ctx,
+	PCTPrimitive		prim,
+	P__CTRTShaderData	data
+) {
+
+
+
+}
+
+static void __HCTRenderThreadPixShader(
+	CTPixCtx			ctx,
+	PCTPixel			pixel,
+	P__CTRTShaderData	data
+) {
+
+}
+
+static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
+
+	__CTRTShaderData shaderData = {
+					.object = object,
+					.camera = camera
+	};
+
+
+}
+
 void __CTRenderThreadProc(
 	UINT32		reason,
 	PCTThread	thread,
@@ -251,6 +289,11 @@ void __CTRenderThreadProc(
 
 	case CT_THREADPROC_REASON_INIT:
 
+		CTLogImportant(
+			__ctdata.sys.rendering.logStream,
+			"Rendering System Starting Up..."
+		);
+
 		__ctdata.sys.rendering.lock			= CTLockCreate();
 		__ctdata.sys.rendering.logStream	= CTLogStreamCreate("$renderlog.txt", NULL, NULL);
 		__ctdata.sys.rendering.objList		= CTDynListCreate(
@@ -262,9 +305,18 @@ void __CTRenderThreadProc(
 			CT_RTHREAD_CAMERA_NODE_SIZE
 		);
 
+		__ctdata.sys.rendering.shader = CTShaderCreate(
+			__HCTRenderThreadPrimShader,
+			__HCTRenderThreadPixShader,
+			sizeof(CTGObject),
+			0,
+			0,
+			TRUE
+		);
+
 		CTLogImportant(
 			__ctdata.sys.rendering.logStream,
-			"Rendering System Starting Up..."
+			"Rendering System Startup Complete..."
 		);
 
 		break;
@@ -273,12 +325,103 @@ void __CTRenderThreadProc(
 		
 		CTLockEnter(__ctdata.sys.rendering.lock);
 
-		printf("GFX spin %d\n",
-			thread->threadSpinCount);
-
-
+		/// SUMMARY:
+		/// loop (all graphics objects)
+		///		if (object is NOT VISIBLE) 
+		///			skip
+		///		if (object is SIGNALED TO BE DESTROYED)
+		///			CALL DESTROY
+		///			destroy object
+		///			skip
+		///		loop (all cameras)
+		///			if (camera is SIGNALED TO BE DESTROYED)
+		///				destroy camera
+		///				skip
+		///			if (camera's target is NULL)
+		///				skip
+		///			CALL PRE-RENDER
+		///			setup shader parameters
+		///			setup shader inputs
+		///			draw renderObject
+		///			CALL POST-RENDER
 
 		CTLockLeave(__ctdata.sys.rendering.lock);
+
+		PCTIterator gObjIter = CTIteratorCreate(__ctdata.sys.rendering.objList);
+		PCTGO object		 = NULL;
+		while ((object = CTIteratorIterate(gObjIter)) != NULL) {
+
+			CTGraphicsObjectLock(object);
+
+			if (object->visible == FALSE) {
+				CTGraphicsObjectUnlock(object);
+				continue;
+			}
+
+			if (object->destroySignal == TRUE) {
+				__HCTCallObjectGProc(
+					object,
+					CT_GPROC_REASON_DESTROY,
+					NULL
+				);
+				CTGraphicsObjectUnlock(object);
+
+				CTLockDestroy(&object->lock);
+				CTFree(object->gData);
+
+				CTDynListRemove(
+					__ctdata.sys.rendering.objList,
+					object
+				);
+				continue;
+			}
+
+			PCTIterator camIter = CTIteratorCreate(__ctdata.sys.rendering.cameraList);
+			PCTCamera camera	= NULL;
+			while ((camera = CTIteratorIterate(camIter)) != NULL) {
+				
+				CTCameraLock(camera);
+
+				if (camera->destroySignal == TRUE) {
+					CTLockDestroy(camera->lock);
+					CTDynListRemove(
+						__ctdata.sys.rendering.cameraList,
+						camera
+					);
+					continue;
+				}
+
+				if (camera->renderTarget == NULL) {
+					CTCameraUnlock(camera);
+					continue;
+				}
+
+				__HCTCallObjectGProc(
+					object,
+					CT_GPROC_REASON_PRE_RENDER,
+					NULL
+				);
+
+				__HCTDrawGraphicsObject(
+					object,
+					camera
+				);
+
+				__HCTCallObjectGProc(
+					object,
+					CT_GPROC_REASON_POST_RENDER,
+					NULL
+				);
+
+			}
+
+			CTIteratorDestroy(&camIter);
+
+			CTGraphicsObjectUnlock(object);
+
+		}
+
+		CTIteratorDestroy(gObjIter);
 
 		break;
 

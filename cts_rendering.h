@@ -62,10 +62,9 @@ CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader);
 //////////////////////////////////////////////////////////////////////////////
 
 #define CT_GPROC_REASON_INIT		0
-#define CT_GPROC_REASON_UPDATE		1
-#define CT_GPROC_REASON_DESTROY		2
-#define CT_GPROC_REASON_PRE_RENDER	3
-#define CT_GPROC_REASON_POST_RENDER	4
+#define CT_GPROC_REASON_DESTROY		1
+#define CT_GPROC_REASON_PRE_RENDER	2
+#define CT_GPROC_REASON_POST_RENDER	3
 typedef (*PCTFUNCGOPROC)(
 	UINT32	reason,
 	PVOID	object,

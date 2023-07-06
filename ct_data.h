@@ -50,6 +50,7 @@ struct {
 			PCTLogStream	logStream;
 			PCTDynList		objList;
 			PCTDynList		cameraList;
+			PCTShader		shader;
 		} rendering;
 
 	} sys;
