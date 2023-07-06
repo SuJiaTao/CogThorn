@@ -55,7 +55,7 @@ typedef struct CTLogEntry {
 	PCTLogStream	logStream;
 	UINT32			logType;
 	CHAR			message[CT_LOG_MESSAGE_SIZE];
-} CTLogEntry, * PCTLogEntry;
+} CTLogEntry, *PCTLogEntry;
 
 CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook, PVOID hookInput);
 CTCALL	BOOL				CTLogStreamDestroy(PCTLogStream* pStream);

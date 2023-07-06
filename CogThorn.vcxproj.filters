@@ -63,6 +63,9 @@
     <ClInclude Include="ct_data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CogThorn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ct_base_memory.c">

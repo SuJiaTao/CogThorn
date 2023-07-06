@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CogThorn.h" />
     <ClInclude Include="ct_data.h" />
     <ClInclude Include="cts_graphics.h" />
     <ClInclude Include="ct_base.h" />
