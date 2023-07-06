@@ -83,6 +83,7 @@ typedef struct CTGObject {
 	BOOL			destroySignal;
 	PCTLock			lock;
 	UINT32			outlineSizePixels;
+	PCTFB			texture;
 	PCTMesh			mesh;
 	PCTSubShader	subShader;
 	CTColor			tintColor;
@@ -98,6 +99,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	CTVect			scale,
 	FLOAT			rotation,
 	FLOAT			layer,
+	PCTFB			texture,
 	PCTMesh			mesh,
 	PCTSubShader	subShader,
 	PCTFUNCGOPROC	gProc,

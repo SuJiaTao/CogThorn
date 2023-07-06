@@ -10,6 +10,7 @@
 #define _CT_DATA_INCLUDE_
 
 #include "ct_base.h"
+#include "ct_gfx.h"
 #include "ct_logging.h"
 #include "ct_thread.h"
 

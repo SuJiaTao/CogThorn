@@ -69,7 +69,7 @@ CTCALL	BOOL	CogThornInit(void) {
 	//////////////////////////////////////////////////////////////////////////////
 
 	TIMECAPS timeCaps;
-	timeGetDevCaps(&timeCaps, sizeof(timeCaps));
+	timeGetDevCaps(&timeCaps, sizeof(TIMECAPS));
 	timeBeginPeriod(timeCaps.wPeriodMin);
 
 	//////////////////////////////////////////////////////////////////////////////
@@ -138,6 +138,8 @@ CTCALL	BOOL	CogThornTerminate(void) {
 
 	DeleteCriticalSection(&__ctdata.base.errorLock);
 	HeapDestroy(__ctdata.base.heap);
+
+	ZeroMemory(&__ctdata, sizeof(__ctdata));
 
 	return TRUE;
 }

@@ -64,6 +64,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	CTVect			scale,
 	FLOAT			rotation,
 	FLOAT			layer,
+	PCTFB			texture,
 	PCTMesh			mesh,
 	PCTSubShader	subShader,
 	PCTFUNCGOPROC	gProc,
@@ -86,6 +87,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	obj->gData				= CTAlloc(max(4, gDataSizeBytes));
 	obj->gDataSizeBytes		= gDataSizeBytes;
 	obj->mesh				= mesh;
+	obj->texture			= texture;
 	obj->outlineColor		= CTColorCreate(0, 0, 0, 255);
 	obj->outlineSizePixels	= 1;
 	obj->subShader			= subShader;
@@ -269,12 +271,25 @@ static void __HCTRenderThreadPixShader(
 
 static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
 
+	if (object->mesh == NULL)
+		return;
+
 	__CTRTShaderData shaderData = {
 					.object = object,
 					.camera = camera
 	};
 
-
+	/// DRAW OBJECT OUTLINE
+	if (object->outlineSizePixels != 0) {
+		__ctdata.sys.rendering.shader->lineSizePixels = 
+			max(
+				CT_SHADER_LINESIZE_MIN, 
+				min(
+					CT_SHADER_LINESIZE_MAX, 
+					object->outlineSizePixels
+				)
+			);
+	}
 }
 
 void __CTRenderThreadProc(
@@ -383,7 +398,7 @@ void __CTRenderThreadProc(
 				CTCameraLock(camera);
 
 				if (camera->destroySignal == TRUE) {
-					CTLockDestroy(camera->lock);
+					CTLockDestroy(&camera->lock);
 					CTDynListRemove(
 						__ctdata.sys.rendering.cameraList,
 						camera
@@ -421,7 +436,7 @@ void __CTRenderThreadProc(
 
 		}
 
-		CTIteratorDestroy(gObjIter);
+		CTIteratorDestroy(&gObjIter);
 
 		break;
 
