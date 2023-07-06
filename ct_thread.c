@@ -14,6 +14,7 @@
 typedef struct __CTThreadInput {
 	PCTThread	thread;
 	PVOID		initUserInput;
+	HANDLE		initCompleteMsg;
 } __CTThreadInput, *P__CTThreadInput;
 
 typedef struct __CTThreadTaskData {
@@ -40,7 +41,6 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 
 	PCTThread thread	= threadInput->thread;
 	PVOID userInit		= threadInput->initUserInput;
-	CTFree(threadInput);
 
 	CTLockEnter(thread->threadLock);
 	thread->threadProc(
@@ -50,6 +50,8 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 		userInit
 	);
 	CTLockLeave(thread->threadLock);
+
+	SetEvent(threadInput->initCompleteMsg);
 
 	UINT64 CLOCK_FREQUENCY_MSEC;
 	QueryPerformanceFrequency(&CLOCK_FREQUENCY_MSEC);
@@ -142,6 +144,12 @@ CTCALL	PCTThread	CTThreadCreate(
 	P__CTThreadInput threadInput	= CTAlloc(sizeof(*threadInput));
 	threadInput->thread				= thread;
 	threadInput->initUserInput		= threadInitInput;
+	threadInput->initCompleteMsg	= CreateEventA(
+		NULL,
+		TRUE,
+		FALSE,
+		NULL
+	);
 
 	thread->hThread = CreateThread(
 		NULL,
@@ -151,6 +159,15 @@ CTCALL	PCTThread	CTThreadCreate(
 		NULL,
 		NULL
 	);
+
+	WaitForSingleObject(
+		threadInput->initCompleteMsg,
+		INFINITE
+	);
+
+	CloseHandle(threadInput->initCompleteMsg);
+
+	CTFree(threadInput);
 
 	return thread;
 }

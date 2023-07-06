@@ -81,12 +81,13 @@ BOOL WINAPI DllMain(
 
         ZeroMemory(__ctghandler, sizeof(*__ctghandler));
 
+        printf("initing ctghandler\n");
         __ctghandler->thread = CTThreadCreate(
             __CTGFXHandlerThreadProc,
             NULL,
             NULL,
-
-        )
+            CT_G_HANDLER_SPINTIME_MSEC
+        );
 
         break;
 

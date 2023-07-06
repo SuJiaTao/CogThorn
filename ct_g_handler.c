@@ -200,4 +200,26 @@ void __CTGFXHandlerThreadProc(
 	PCTThread	thread,
 	PVOID		threadData,
 	PVOID		input
-);
+) {
+
+	switch (reason)
+	{
+
+	case CT_THREADPROC_REASON_INIT:
+
+		break;
+
+	case CT_THREADPROC_REASON_SPIN:
+
+		break;
+
+	case CT_THREADPROC_REASON_EXIT:
+
+		break;
+
+	default:
+		break;
+
+	}
+
+}
