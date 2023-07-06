@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cte_gfx.h" />
+    <ClInclude Include="ct_g_handler.h" />
     <ClInclude Include="ct_base.h" />
     <ClInclude Include="ct_gfx.h" />
     <ClInclude Include="ct_logging.h" />

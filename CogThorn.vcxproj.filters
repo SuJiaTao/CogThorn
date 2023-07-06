@@ -54,7 +54,7 @@
     <ClInclude Include="ct_thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cte_gfx.h">
+    <ClInclude Include="ct_g_handler.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>

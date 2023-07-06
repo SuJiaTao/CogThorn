@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 ///	
-/// 							<cte_gfx.h>
+/// 							<ct_g_handler.h>
 ///								Bailey JT Brown
 ///								2023
 /// 
@@ -52,7 +52,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 );
 #define CTSubShaderCreate(prim, pix) \
 	CTSubShaderCreateEx(prim, pix, FALSE, FALSE, FALSE, FALSE)
-CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader shader);
+CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -81,6 +81,7 @@ typedef struct CTTransform {
 typedef struct CTGObject {
 	BOOL			visible;
 	BOOL			destroySignal;
+	CTLock			lock;
 	UINT32			outlineSizePixels;
 	PCTMesh			mesh;
 	PCTSubShader	subShader;
@@ -101,7 +102,9 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	SIZE_T			gDataSizeBytes,
 	PVOID			initInput
 );
-CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO gObject);
+CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject);
+CTCALL	BOOL	CTGraphicsObjectLock(PCTGO gObject);
+CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -121,12 +124,29 @@ CTCALL	PCTCamera	CTCameraCreate(
 	FLOAT	rotation,
 	PCTFB	renderTarget
 );
-CTCALL	BOOL		CTCameraDestroy(PCTCamera camera);
+CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
-///								CAMERA OBJECT
+///								GRAPHICS HANDLER MODULE
 /// 
 //////////////////////////////////////////////////////////////////////////////
+
+void __CTGFXHandlerThreadProc(
+	UINT32		reason, 
+	PCTThread	thread, 
+	PVOID		threadData, 
+	PVOID		input
+);
+
+#define CT_G_HANDLER_SPINTIME_MSEC		(1000 / 40)
+#define CT_G_HANDLER_GOBJ_NODE_SIZE		1024
+#define CT_G_HANDLER_CAMERA_NODE_SIZE	32
+typedef struct CTModuleGFXHandler {
+	PCTThread	thread;
+	PCTDynList	gObjList;
+	PCTDynList	cameraList;
+} CTModuleGFXHandler, *PCTModuleGFXHandler;
+PCTModuleGFXHandler __ctghandler;		// INSTANCE
 
 #endif

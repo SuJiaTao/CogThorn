@@ -9,6 +9,7 @@
 #include "ct_base.h"
 #include "ct_gfx.h"
 #include "ct_logging.h"
+#include "ct_g_handler.h"
 
 #include <stdio.h>
 
@@ -20,13 +21,6 @@ BOOL WINAPI DllMain(
     switch (fdwReason)
     {
     case DLL_PROCESS_ATTACH:
-
-        /// INITIALIZE THREAD MODULE
-    {
-        TIMECAPS timeCaps;
-        timeGetDevCaps(&timeCaps, sizeof(timeCaps));
-        timeBeginPeriod(timeCaps.wPeriodMin);
-    }
         
         /// INITIALIZE BASE MODULE
 
@@ -73,6 +67,27 @@ BOOL WINAPI DllMain(
             NULL
         );
 
+        /// INITIALIZE THREAD MODULE
+        {
+            TIMECAPS timeCaps;
+            timeGetDevCaps(&timeCaps, sizeof(timeCaps));
+            timeBeginPeriod(timeCaps.wPeriodMin);
+        }
+
+        /// INITIALIZE GRAPHICS HANDLER
+
+        __ctghandler = LocalAlloc(0, sizeof(*__ctghandler));
+        if (__ctghandler == NULL) return FALSE;
+
+        ZeroMemory(__ctghandler, sizeof(*__ctghandler));
+
+        __ctghandler->thread = CTThreadCreate(
+            __CTGFXHandlerThreadProc,
+            NULL,
+            NULL,
+
+        )
+
         break;
 
     case DLL_THREAD_ATTACH:
@@ -80,6 +95,10 @@ BOOL WINAPI DllMain(
         break;
 
     case DLL_PROCESS_DETACH:
+
+        /// CLEANUP GRAPHICS HANDLER
+        
+
 
         /// CLEANUP LOGGING MODULE
          
