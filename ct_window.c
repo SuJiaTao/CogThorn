@@ -380,7 +380,14 @@ CTCALL	BOOL	CTWindowSetShouldClose(PCTWindow window, BOOL state) {
 	return TRUE;
 }
 
-CTCALL	BOOL	CTWindowDestroy(PCTWin window) {
+CTCALL	BOOL	CTWindowDestroy(PCTWin* pWindow) {
+	if (pWindow == NULL) {
+		CTErrorSetBadObject("CTWindowDestroy failed because pWindow was NULL");
+		return FALSE;
+	}
+
+	PCTWin window = *pWindow;
+
 	if (window == NULL) {
 		CTErrorSetBadObject("CTWindowDestroy failed because window was NULL");
 		return FALSE;
@@ -390,5 +397,6 @@ CTCALL	BOOL	CTWindowDestroy(PCTWin window) {
 
 	SendMessageA(window->hwnd, CT_WINDOW_CLOSEMESSAGE, NULL, NULL);
 
+	*pWindow = NULL;
 	return TRUE;
 }

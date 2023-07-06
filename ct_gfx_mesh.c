@@ -42,7 +42,14 @@ CTCALL	PCTMesh		CTMeshCreate(PFLOAT verts, PFLOAT uvs, UINT32 primCount) {
 	return rMesh;
 }
 
-CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh) {
+CTCALL	BOOL		CTMeshDestroy(PCTMesh* pMesh) {
+	if (pMesh == NULL) {
+		CTErrorSetBadObject("CTMeshDestroy failed: pMesh was NULL");
+		return FALSE;
+	}
+
+	PCTMesh mesh = *pMesh;
+
 	if (mesh == NULL) {
 		CTErrorSetBadObject("CTMeshDestroy failed: mesh was NULL");
 		return FALSE;
@@ -51,5 +58,6 @@ CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh) {
 	CTGFXFree(mesh->primList);
 	CTGFXFree(mesh);
 
+	*pMesh = NULL;
 	return TRUE;
 }

@@ -26,7 +26,19 @@ CTCALL	PCTShader	CTShaderCreate(
 	return rs;
 }
 
-CTCALL	BOOL		CTShaderDestroy(PCTShader shader) {
+CTCALL	BOOL		CTShaderDestroy(PCTShader* pShader) {
+	if (pShader == NULL) {
+		CTErrorSetBadObject("CTShader destroy failed: pShader was NULL");
+		return FALSE;
+	}
+
+	PCTShader shader = *pShader;
+	if (shader == NULL) {
+		CTErrorSetBadObject("CTShader destroy failed: shader was NULL");
+		return FALSE;
+	}
+
 	CTGFXFree(shader);
+	*pShader = NULL;
 	return TRUE;
 }

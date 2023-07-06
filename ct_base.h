@@ -76,7 +76,7 @@ CTCALL	BOOL		CTFileExists(PCHAR path);
 CTCALL	PCTFile		CTFileCreate(PCHAR path);
 CTCALL	BOOL		CTFileDelete(PCHAR path);
 CTCALL	PCTFile		CTFileOpen(PCHAR path);
-CTCALL	BOOL		CTFileClose(PCTFile file);
+CTCALL	BOOL		CTFileClose(PCTFile* pFile);
 CTCALL	SIZE_T		CTFileSize(PCTFile file);
 CTCALL	BOOL		CTFileRead(PCTFile file, PVOID buffer, SIZE_T offset, SIZE_T sizeBytes);
 CTCALL	BOOL		CTFileWrite(PCTFile file, PVOID buffer, SIZE_T offset, SIZE_T sizeBytes);
@@ -92,7 +92,7 @@ typedef struct CTLock {
 } CTLock, *PCTLock;
 
 CTCALL	PCTLock		CTLockCreate(void);
-CTCALL	BOOL		CTLockDestroy(PCTLock lock);
+CTCALL	BOOL		CTLockDestroy(PCTLock* pLock);
 CTCALL	BOOL		CTLockEnter(PCTLock lock);
 CTCALL	BOOL		CTLockLeave(PCTLock lock);
 
@@ -128,7 +128,7 @@ typedef struct CTIterator {
 } CTIterator, *PCTIterator;
 
 CTCALL	PCTDynList	CTDynListCreate(SIZE_T elemSize, UINT32 elemsPerNode);
-CTCALL	BOOL		CTDynListDestroy(PCTDynList list);
+CTCALL	BOOL		CTDynListDestroy(PCTDynList* pList);
 CTCALL	BOOL		CTDynListClear(PCTDynList list);
 CTCALL	BOOL		CTDynListLock(PCTDynList list);
 CTCALL	BOOL		CTDynListUnlock(PCTDynList list);

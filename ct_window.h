@@ -42,6 +42,6 @@ CTCALL	BOOL	CTWindowSetFrameBuffer(PCTWin window, PCTFB frameBuffer);
 CTCALL	BOOL	CTWindowUpdate(PCTWindow window);
 CTCALL	BOOL	CTWindowShouldClose(PCTWindow window);
 CTCALL	BOOL	CTWindowSetShouldClose(PCTWindow window, BOOL state);
-CTCALL	BOOL	CTWindowDestroy(PCTWin window);
+CTCALL	BOOL	CTWindowDestroy(PCTWin* pWindow);
 
 #endif

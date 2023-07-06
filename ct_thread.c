@@ -155,7 +155,14 @@ CTCALL	PCTThread	CTThreadCreate(
 	return thread;
 }
 
-CTCALL	BOOL		CTThreadDestroy(PCTThread thread) {
+CTCALL	BOOL		CTThreadDestroy(PCTThread* pThread) {
+
+	if (pThread == NULL) {
+		CTErrorSetBadObject("CTThreadDestroy failed: pThread was NULL");
+		return FALSE;
+	}
+
+	PCTThread thread = *pThread;
 
 	if (thread == NULL) {
 		CTErrorSetBadObject("CTThreadDestroy failed: thread was NULL");
@@ -172,6 +179,7 @@ CTCALL	BOOL		CTThreadDestroy(PCTThread thread) {
 	thread->killSignal = TRUE;
 	CTLockLeave(thread->threadLock);
 
+	*pThread = NULL;
 	WaitForSingleObject(thread->hThread, INFINITE);
 
 	return TRUE;

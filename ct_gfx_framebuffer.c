@@ -29,7 +29,14 @@ CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height) {
 	return rfb;
 }
 
-CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer fb) {
+CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb) {
+	if (pfb == NULL) {
+		CTErrorSetBadObject("CTFrameBufferDestroy failed: pfb was NULL");
+		return FALSE;
+	}
+
+	PCTFrameBuffer fb = *pfb;
+
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferDestroy failed: fb was NULL");
 		return FALSE;
@@ -41,6 +48,7 @@ CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer fb) {
 	CTLockDestroy(fb->lock);
 	CTGFXFree(fb);
 
+	*pfb = NULL;
 	return TRUE;
 }
 

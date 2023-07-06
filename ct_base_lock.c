@@ -14,7 +14,14 @@ CTCALL	PCTLock		CTLockCreate(void) {
 	return lock;
 }
 
-CTCALL	BOOL		CTLockDestroy(PCTLock lock) {
+CTCALL	BOOL		CTLockDestroy(PCTLock* pLock) {
+	if (pLock == NULL) {
+		CTErrorSetBadObject("CTLockDestroy failed: pLock was NULL");
+		return FALSE;
+	}
+
+	PCTLock lock = *pLock;
+
 	if (lock == NULL) {
 		CTErrorSetBadObject("CTLockDestroy failed: lock was NULL");
 		return FALSE;
@@ -24,6 +31,7 @@ CTCALL	BOOL		CTLockDestroy(PCTLock lock) {
 	DeleteCriticalSection(&lock->lock);
 	CTFree(lock);
 
+	*pLock = NULL;
 	return TRUE;
 }
 

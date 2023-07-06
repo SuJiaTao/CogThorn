@@ -100,7 +100,14 @@ CTCALL	PCTFile		CTFileOpen(PCHAR path) {
 	return file;
 }
 
-CTCALL	BOOL		CTFileClose(PCTFile file) {
+CTCALL	BOOL		CTFileClose(PCTFile* pFile) {
+	if (pFile == NULL) {
+		CTErrorSetBadObject("CTFileClose failed: pFile was NULL");
+		return FALSE;
+	}
+
+	PCTFile file = *pFile;
+
 	if (file == NULL) {
 		CTErrorSetBadObject("CTFileClose failed: file was NULL");
 		return FALSE;
@@ -109,6 +116,7 @@ CTCALL	BOOL		CTFileClose(PCTFile file) {
 	CloseHandle(file->hFile);
 	CTFree(file);
 
+	*pFile = NULL;
 	return TRUE;
 }
 

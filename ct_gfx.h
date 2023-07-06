@@ -70,7 +70,7 @@ typedef struct CTFrameBuffer {
 } CTFrameBuffer, *PCTFrameBuffer, CTFB, *PCTFB;
 
 CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height);
-CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer fb);
+CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb);
 CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth);
 CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth);
 CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth);
@@ -95,7 +95,7 @@ typedef struct CTMesh {
 } CTMesh, *PCTMesh;
 
 CTCALL	PCTMesh		CTMeshCreate(PFLOAT verts, PFLOAT uvs, UINT32 primCount);
-CTCALL	BOOL		CTMeshDestroy(PCTMesh mesh);
+CTCALL	BOOL		CTMeshDestroy(PCTMesh* pMesh);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -145,7 +145,7 @@ CTCALL	PCTShader	CTShaderCreate(
 	UINT32			lineSize,
 	BOOL			depthTest
 );
-CTCALL	BOOL		CTShaderDestroy(PCTShader shader);
+CTCALL	BOOL		CTShaderDestroy(PCTShader* pShader);
 
 //////////////////////////////////////////////////////////////////////////////
 ///

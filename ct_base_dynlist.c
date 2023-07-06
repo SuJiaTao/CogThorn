@@ -87,7 +87,14 @@ CTCALL	PCTDynList	CTDynListCreate(SIZE_T elemSize, UINT32 elemsPerNode) {
 	return pList;
 }
 
-CTCALL	BOOL		CTDynListDestroy(PCTDynList list) {
+CTCALL	BOOL		CTDynListDestroy(PCTDynList* pList) {
+	if (pList == NULL) {
+		CTErrorSetBadObject("CTDynListDestroy failed: pList was NULL");
+		return FALSE;
+	}
+
+	PCTDynList list = *pList;
+
 	if (list == NULL) {
 		CTErrorSetBadObject("CTDynListDestroy failed: list was NULL");
 		return FALSE;
@@ -111,6 +118,7 @@ CTCALL	BOOL		CTDynListDestroy(PCTDynList list) {
 	DeleteCriticalSection(&list->lock);
 	CTFree(list);
 
+	*pList = NULL;
 	return TRUE;
 }
 
