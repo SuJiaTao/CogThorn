@@ -382,7 +382,14 @@ CTCALL	PCTIterator	CTIteratorCreate(PCTDynList list) {
 	return iter;
 }
 
-CTCALL	BOOL		CTIteratorDestroy(PCTIterator iterator) {
+CTCALL	BOOL		CTIteratorDestroy(PCTIterator* pIterator) {
+	if (pIterator == NULL) {
+		CTErrorSetBadObject("CTIteratorDestroy failed: pIterator was NULL");
+		return FALSE;
+	}
+
+	PCTIterator iterator = *pIterator;
+
 	if (iterator == NULL) {
 		CTErrorSetBadObject("CTIteratorDestroy failed: iterator was NULL");
 		return FALSE;
@@ -391,6 +398,7 @@ CTCALL	BOOL		CTIteratorDestroy(PCTIterator iterator) {
 	CTDynListUnlock(iterator->parent);
 	CTFree(iterator);
 
+	*pIterator = NULL;
 	return TRUE;
 }
 

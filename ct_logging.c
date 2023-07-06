@@ -72,7 +72,7 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 			PCTLogEntry entry = CTDynListAdd(logWriteBuffer);
 			*entry = *LOG_ENTRY;
 		}
-		CTIteratorDestroy(logQueueIter);
+		CTIteratorDestroy(&logQueueIter);
 		CTDynListClear(__ctlog->logWriteQueue);
 
 		CTLockLeave(__ctlog->lock);
@@ -83,10 +83,14 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 
 			if (logFile == NULL) {
 				logFile = CTFileOpen(LOG_ENTRY->logStream->streamName);
+				if (logFile == NULL) {
+					CTErrorSetFunction("__CTLoggingThreadProc encountered fatal error: could not open file");
+					continue;
+				}
 			}
 
 			if (strcmp(logFile->fileName, LOG_ENTRY->logStream->streamName) != 0) {
-				CTFileClose(logFile);
+				CTFileClose(&logFile);
 				logFile = CTFileOpen(LOG_ENTRY->logStream->streamName);
 			}
 
@@ -157,15 +161,15 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 		}
 
 		if (logFile != NULL)
-			CTFileClose(logFile);
+			CTFileClose(&logFile);
 
-		CTIteratorDestroy(writeBufferIter);
+		CTIteratorDestroy(&writeBufferIter);
 		CTDynListClear(logWriteBuffer);
 
 		SPIN_TIME_END = GetTickCount64();
 
 		if (__ctlog->killSignal == TRUE) {
-			CTDynListDestroy(logWriteBuffer);
+			CTDynListDestroy(&logWriteBuffer);
 			ExitThread(ERROR_SUCCESS);
 		}
 		
@@ -221,7 +225,7 @@ CTCALL	PCTLogStream		CTLogStreamCreate(PCHAR streamName, PCTFUNCLOGHOOK logHook,
 	);
 	CTFree(fileHeaderFmtBuffer);
 
-	CTFileClose(logFile);
+	CTFileClose(&logFile);
 
 	return ls;
 
@@ -341,8 +345,8 @@ CTCALL	BOOL				CTLogFormatted(PCTLogStream stream, UINT32 logType, PCHAR message
 		logType,
 		fmtBuffer
 	);
-
-	va_end(args, message);
+	
+	va_end(args);
 
 	return logFuncRslt;
 

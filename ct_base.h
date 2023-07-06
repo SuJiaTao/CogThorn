@@ -136,7 +136,7 @@ CTCALL	PVOID		CTDynListAdd(PCTDynList list);
 CTCALL	BOOL		CTDynListRemove(PCTDynList list, PVOID element);
 CTCALL	BOOL		CTDynListClean(PCTDynList list);
 CTCALL	PCTIterator	CTIteratorCreate(PCTDynList list);
-CTCALL	BOOL		CTIteratorDestroy(PCTIterator iterator);
+CTCALL	BOOL		CTIteratorDestroy(PCTIterator* pIterator);
 CTCALL	PVOID		CTIteratorIterate(PCTIterator iterator);
 
 //////////////////////////////////////////////////////////////////////////////

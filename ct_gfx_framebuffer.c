@@ -45,7 +45,7 @@ CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb) {
 	CTLockEnter(fb->lock);
 	CTGFXFree(fb->color);
 	CTGFXFree(fb->depth);
-	CTLockDestroy(fb->lock);
+	CTLockDestroy(&fb->lock);
 	CTGFXFree(fb);
 
 	*pfb = NULL;

@@ -67,7 +67,7 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 
 	case CT_WINDOW_CLOSEMESSAGE: {
 		UnregisterClassA(ctwin->wndClassName, NULL);
-		CTLockDestroy(ctwin->lock);
+		CTLockDestroy(&ctwin->lock);
 		CTGFXFree(ctwin);
 
 		message = WM_CLOSE;

@@ -86,8 +86,8 @@ BOOL WINAPI DllMain(
         __ctlog->killSignal = TRUE;
         WaitForSingleObject(__ctlog->logWriteThread, INFINITE);
 
-        CTDynListDestroy(__ctlog->logWriteQueue);
-        CTLockDestroy(__ctlog->lock);
+        CTDynListDestroy(&__ctlog->logWriteQueue);
+        CTLockDestroy(&__ctlog->lock);
 
         LocalFree(__ctlog);
         

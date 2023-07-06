@@ -81,7 +81,7 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 			);
 		}
 
-		CTIteratorDestroy(taskIter);
+		CTIteratorDestroy(&taskIter);
 		CTDynListClear(thread->threadTaskQueue);
 
 		if (thread->killSignal == TRUE) {
@@ -93,8 +93,8 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 				NULL
 			);
 
-			CTDynListDestroy(thread->threadTaskQueue);
-			CTLockDestroy(thread->threadLock);
+			CTDynListDestroy(&thread->threadTaskQueue);
+			CTLockDestroy(&thread->threadLock);
 			CTFree(thread->threadData);
 			CTFree(thread);
 
