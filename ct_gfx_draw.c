@@ -650,6 +650,8 @@ CTCALL	BOOL		CTDraw(
 	///		closed polygon outline of mesh
 	///		FILLED:
 	///		filled mesh
+	///		WIREFREAME:
+	///		draw lines for each triangle in mesh
 	///		UNKNOWN:
 	///		raise error
 	///		return FALSE
@@ -739,6 +741,33 @@ CTCALL	BOOL		CTDraw(
 		for (UINT32 primIndex = 0; primIndex < mesh->primCount - 2; primIndex++) {
 			__HCTDrawTriangle(
 				processedPrimList + 0,
+				processedPrimList + primIndex + 1,
+				processedPrimList + primIndex + 2,
+				&drawInfo
+			);
+		}
+
+		break;
+
+	case CT_DRAW_METHOD_WIREFRAME:
+
+		if (mesh->primCount <= 2) {
+			CTErrorSetFunction("CTDraw failed: cannot draw a wireframe with only 2 verticies");
+			goto DrawFuncFailure;
+		}
+
+		for (UINT32 primIndex = 0; primIndex < mesh->primCount - 2; primIndex++) {
+			__HCTDrawLine(
+				processedPrimList + 0,
+				processedPrimList + primIndex + 1,
+				&drawInfo
+			);
+			__HCTDrawLine(
+				processedPrimList + 0,
+				processedPrimList + primIndex + 2,
+				&drawInfo
+			);
+			__HCTDrawLine(
 				processedPrimList + primIndex + 1,
 				processedPrimList + primIndex + 2,
 				&drawInfo

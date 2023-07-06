@@ -157,6 +157,7 @@ CTCALL	BOOL		CTShaderDestroy(PCTShader* pShader);
 #define CT_DRAW_METHOD_LINES_OPEN	1
 #define CT_DRAW_METHOD_LINES_CLOSED	2
 #define CT_DRAW_METHOD_FILL			3
+#define CT_DRAW_METHOD_WIREFRAME	4
 CTCALL	BOOL		CTDraw(
 	UINT32		drawMethod, 
 	PCTFB		frameBuffer, 
