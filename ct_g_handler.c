@@ -209,7 +209,7 @@ void __CTGFXHandlerThreadProc(
 	case CT_THREADPROC_REASON_INIT:
 
 		__ctghandler->lock			= CTLockCreate();
-		__ctghandler->logStream		= CTLogStreamCreate(".cogthorn\\gfxlog.log", NULL, NULL);
+		__ctghandler->logStream		= CTLogStreamCreate("$gfxlog.log", NULL, NULL);
 		__ctghandler->objList = CTDynListCreate(
 			sizeof(CTGO),
 			CT_G_HANDLER_GOBJ_NODE_SIZE
@@ -227,15 +227,25 @@ void __CTGFXHandlerThreadProc(
 		break;
 
 	case CT_THREADPROC_REASON_SPIN:
-		printf("ghandler spin\n");
+		
+		printf("GFX spin %d\n",
+			thread->threadSpinCount);
+		CTLogInfo(
+			__ctghandler->logStream,
+			"GFX spin %d",
+			thread->threadSpinCount
+		);
+
 		break;
 
 	case CT_THREADPROC_REASON_EXIT:
-		
+
 		CTLogImportant(
 			__ctghandler->logStream,
 			"GFX Handler Shutting Down..."
 		);
+
+		printf("gfxh log complete...\n");
 
 		CTLockEnter(__ctghandler->lock);
 		CTLockDestroy(&__ctghandler->lock);

@@ -100,14 +100,16 @@ BOOL WINAPI DllMain(
         /// CLEANUP GRAPHICS HANDLER
         
         CTThreadDestroy(
-            __ctghandler->thread
+            &__ctghandler->thread
         );
 
         LocalFree(__ctghandler);
 
         /// CLEANUP LOGGING MODULE
          
+        CTLockEnter(__ctlog->lock);
         __ctlog->killSignal = TRUE;
+        CTLockLeave(__ctlog->lock);
         WaitForSingleObject(__ctlog->logWriteThread, INFINITE);
 
         CTDynListDestroy(&__ctlog->logWriteQueue);

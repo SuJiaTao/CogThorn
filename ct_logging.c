@@ -28,7 +28,8 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 	/// 
 	///		CLEAR QUEUE
 	///		
-	///		LEAVE LOCK
+	///		if (NOT kill signal)
+	///			LEAVE LOCK
 	/// 
 	///		for (all in write list)
 	///			if (file is NULL)
@@ -75,7 +76,9 @@ DWORD __stdcall __CTLoggingThreadProc(PVOID input) {
 		CTIteratorDestroy(&logQueueIter);
 		CTDynListClear(__ctlog->logWriteQueue);
 
-		CTLockLeave(__ctlog->lock);
+		if (__ctlog->killSignal == FALSE) {
+			CTLockLeave(__ctlog->lock);
+		}
 
 		PCTIterator writeBufferIter = CTIteratorCreate(logWriteBuffer);
 		PCTFile		logFile			= NULL;
