@@ -92,6 +92,112 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	return obj;
 }
 
-CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject);
-CTCALL	BOOL	CTGraphicsObjectLock(PCTGO gObject);
-CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
+CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject) {
+	if (pGObject == NULL) {
+		CTErrorSetBadObject("CTGraphicsObjectDestroy failed: pGObject was NULL");
+		return FALSE;
+	}
+
+	PCTGO object = *pGObject;
+	if (object == NULL) {
+		CTErrorSetBadObject("CTGraphicsObjectDestroy failed: object was NULL");
+		return FALSE;
+	}
+
+	CTGraphicsObjectLock(object);
+	object->destroySignal = TRUE;
+	CTGraphicsObjectUnlock(object);
+
+	*pGObject = NULL;
+	return TRUE;
+}
+
+CTCALL	BOOL	CTGraphicsObjectLock(PCTGO gObject) {
+	if (gObject == NULL) {
+		CTErrorSetBadObject("CTGraphicsObjectLock failed: gObject was NULL");
+		return FALSE;
+	}
+
+	CTLockEnter(gObject->lock);
+	return TRUE;
+}
+
+CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject) {
+	if (gObject == NULL) {
+		CTErrorSetBadObject("CTGraphicsObjectUnlock failed: gObject was NULL");
+		return FALSE;
+	}
+
+	CTLockLeave(gObject->lock);
+	return TRUE;
+}
+
+CTCALL	PCTCamera	CTCameraCreate(
+	CTVect	position,
+	CTVect	scale,
+	FLOAT	rotation,
+	PCTFB	renderTarget
+) {
+	CTLockEnter(__ctghandler->lock);
+	CTDynListLock(__ctghandler->cameraList);
+
+	PCTCamera cam		= CTDynListAdd(__ctghandler->cameraList);
+	cam->destroySignal	= FALSE;
+	cam->lock			= CTLockCreate();
+	cam->renderTarget	= renderTarget;
+	cam->transform.pos	= position;
+	cam->transform.rot	= rotation;
+	cam->transform.scl	= scale;
+
+	CTDynListUnlock(__ctghandler->cameraList);
+	CTLockLeave(__ctghandler->lock);
+
+	return cam;
+}
+
+CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera) {
+	if (pCamera == NULL) {
+		CTErrorSetBadObject("CTCameraDestroy failed: pCamera was NULL");
+		return FALSE;
+	}
+
+	PCTCamera camera = *pCamera;
+	if (camera == NULL) {
+		CTErrorSetBadObject("CTCameraDestroy failed: camera was NULL");
+		return FALSE;
+	}
+
+	CTCameraLock(camera);
+	camera->destroySignal = TRUE;
+	CTCameraUnlock(camera);
+
+	*pCamera = NULL;
+	return TRUE;
+}
+
+CTCALL	BOOL		CTCameraLock(PCTCamera camera) {
+	if (camera == NULL) {
+		CTErrorSetBadObject("CTCameraLock failed: camera was NULL");
+		return FALSE;
+	}
+
+	CTLockEnter(camera->lock);
+	return TRUE;
+}
+
+CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
+	if (camera == NULL) {
+		CTErrorSetBadObject("CTCameraUnlock failed: camera was NULL");
+		return FALSE;
+	}
+
+	CTLockLeave(camera->lock);
+	return TRUE;
+}
+
+void __CTGFXHandlerThreadProc(
+	UINT32		reason,
+	PCTThread	thread,
+	PVOID		threadData,
+	PVOID		input
+);

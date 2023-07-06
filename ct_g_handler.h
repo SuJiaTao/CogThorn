@@ -116,6 +116,7 @@ CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTCamera {
+	PCTLock		lock;
 	CTTransform	transform;
 	PCTFB		renderTarget;
 	BOOL		destroySignal;
@@ -128,6 +129,8 @@ CTCALL	PCTCamera	CTCameraCreate(
 	PCTFB	renderTarget
 );
 CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera);
+CTCALL	BOOL		CTCameraLock(PCTCamera camera);
+CTCALL	BOOL		CTCameraUnlock(PCTCamera camera);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -145,6 +148,7 @@ void __CTGFXHandlerThreadProc(
 #define CT_G_HANDLER_SPINTIME_MSEC		(1000 / 40)
 #define CT_G_HANDLER_GOBJ_NODE_SIZE		1024
 #define CT_G_HANDLER_CAMERA_NODE_SIZE	32
+#define CT_G_HANDLER_CLEAN_INTERVAL		200
 typedef struct CTModuleGFXHandler {
 	PCTLock			lock;
 	PCTThread		thread;
