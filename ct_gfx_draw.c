@@ -8,6 +8,8 @@
 
 #include "ct_gfx.h"
 
+#include <intrin.h>
+
 typedef struct __CTDrawInfo {
 	UINT32		drawMethod;
 	PCTFB		frameBuffer;
@@ -16,6 +18,10 @@ typedef struct __CTDrawInfo {
 	FLOAT		depth;
 } __CTDrawInfo, *P__CTDrawInfo;
 
+static __forceinline FLOAT __HCTFloatRcp(FLOAT flt) {
+	_mm_store_ss(&flt, _mm_rcp_ss(_mm_set_ss(flt)));
+	return flt;
+}
 
 static void __HCTProcessAndDrawPixel(
 	P__CTDrawInfo	drawInfo, 
@@ -369,7 +375,7 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	CTVect p3 = verts[2].vertex;
 
 	const FLOAT invDenom =
-		1.0f / ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+		__HCTFloatRcp((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
 
 	const FLOAT dv3x = vert.x - p3.x;
 	const FLOAT dv3y = vert.y - p3.y;
