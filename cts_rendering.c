@@ -332,6 +332,12 @@ static BOOL __HCTRenderThreadPixShader(
 		return FALSE;
 
 	CTColor pixColor = CTColorCreate(255, 255, 255, 255);
+
+	if (ctx.drawMethod == CT_DRAW_METHOD_LINES_CLOSED) {
+		pixColor = data->object->outlineColor;
+		goto __Dither;
+	}
+	
 	if (data->object->texture != NULL) {
 		pixColor = CTSSample(
 			data->object->texture,
@@ -351,6 +357,8 @@ static BOOL __HCTRenderThreadPixShader(
 		pixColor.a =
 			(BYTE)((FLOAT)pixColor.a * (FLOAT)data->object->tintColor.a * 0.003921568627f);
 	}
+
+__Dither:
 
 	// custom dithering alogrithm
 	if (applyDither == TRUE &&
@@ -426,7 +434,7 @@ static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
 			);
 
 		CTDraw(
-			CT_DRAW_METHOD_LINES_OPEN,
+			CT_DRAW_METHOD_LINES_CLOSED,
 			shaderData.camera->renderTarget,
 			shaderData.object->mesh,
 			__ctdata.sys.rendering.shader,
