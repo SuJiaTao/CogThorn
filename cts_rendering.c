@@ -393,6 +393,8 @@ static __forceinline void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera
 	/// DRAW OBJECT OUTLINE
 	if (object->outlineSizePixels != 0) {
 
+		printf("drawing outline %p %d.\n", object, object->outlineSizePixels);
+
 		__ctdata.sys.rendering.shader->lineSizePixels = 
 			max(
 				CT_SHADER_LINESIZE_MIN, 
@@ -459,6 +461,11 @@ void __CTRenderThreadProc(
 			0,
 			0,
 			TRUE
+		);
+
+		SetThreadPriority(
+			thread->hThread,
+			THREAD_PRIORITY_TIME_CRITICAL
 		);
 
 		CTLogImportant(
@@ -606,9 +613,10 @@ void __CTRenderThreadProc(
 		CTLockLeave(__ctdata.sys.rendering.lock);
 
 		printf(
-			"CTRT: objs: %d | %d msec taken...\n", 
+			"CTRT: objs: %d | %d msec taken... | %f FPS\n", 
 			__ctdata.sys.rendering.objList->elementsUsedCount,
-			thread->threadSpinLastIntervalMsec
+			thread->threadSpinLastIntervalMsec,
+			1000.0f / (FLOAT)thread->threadSpinLastIntervalMsec
 		);
 
 		break;

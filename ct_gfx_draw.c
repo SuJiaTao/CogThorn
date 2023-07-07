@@ -368,15 +368,15 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	CTVect p2 = verts[1].vertex;
 	CTVect p3 = verts[2].vertex;
 
-	FLOAT invDenom =
+	const FLOAT invDenom =
 		1.0f / ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
 
-	FLOAT dv3x = vert.x - p3.x;
-	FLOAT dv3y = vert.y - p3.y;
+	const FLOAT dv3x = vert.x - p3.x;
+	const FLOAT dv3y = vert.y - p3.y;
 
-	FLOAT weight1 = ((p2.y - p3.y) * (dv3x)+(p3.x - p2.x) * (dv3y)) * invDenom;
-	FLOAT weight2 = ((p3.y - p1.y) * (dv3x)+(p1.x - p3.x) * (dv3y)) * invDenom;
-	FLOAT weight3 = 1 - weight1 - weight2;
+	const FLOAT weight1 = ((p2.y - p3.y) * (dv3x) + (p3.x - p2.x) * (dv3y)) * invDenom;
+	const FLOAT weight2 = ((p3.y - p1.y) * (dv3x) + (p1.x - p3.x) * (dv3y)) * invDenom;
+	const FLOAT weight3 = 1 - weight1 - weight2;
 
 	CTVect UV = {
 		.x = verts[0].UV.x * weight1 + verts[1].UV.x * weight2 + verts[2].UV.x * weight3,
@@ -446,15 +446,14 @@ static UINT32 __HCTDrawTriangleTop(
 					drawY
 				);
 
-			__HCTDrawPoint(
+			__HCTProcessAndDrawPixel(
 				drawInfo,
 				pixID,
 				CTPointCreate(
 					drawX,
 					drawY
 				),
-				UV,
-				1
+				UV
 			);
 			
 			pixID++;
@@ -525,15 +524,14 @@ static UINT32 __HCTDrawTriangleBottom(
 					drawY
 				);
 
-			__HCTDrawPoint(
+			__HCTProcessAndDrawPixel(
 				drawInfo,
 				pixID,
 				CTPointCreate(
 					drawX,
 					drawY
 				),
-				UV,
-				1
+				UV
 			);
 
 			pixID++;

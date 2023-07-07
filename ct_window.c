@@ -165,12 +165,12 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 			.right = winWidth
 		};
 
+		CTFrameBufferUnlock(ctwin->frameBuffer);
+
 		FillRect(paintDC, &topBorder, borderBrush);
 		FillRect(paintDC, &bottomBorder, borderBrush);
 		FillRect(paintDC, &leftBorder, borderBrush);
 		FillRect(paintDC, &rightBorder, borderBrush);
-
-		CTFrameBufferUnlock(ctwin->frameBuffer);
 
 		BOOL drawResult = AlphaBlend(
 			paintDC, 

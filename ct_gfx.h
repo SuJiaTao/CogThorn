@@ -72,9 +72,9 @@ typedef struct CTFrameBuffer {
 
 CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height);
 CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb);
-CTCALL	BOOL	CTFrameBufferSetEx(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth, BOOL lock);
-CTCALL	BOOL	CTFrameBufferDepthTestEx(PCTFrameBuffer fb, CTPoint pt, FLOAT depth, BOOL lock);
-CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth, BOOL lock);
+CTCALL	BOOL	CTFrameBufferSetEx(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth, BOOL safe);
+CTCALL	BOOL	CTFrameBufferDepthTestEx(PCTFrameBuffer fb, CTPoint pt, FLOAT depth, BOOL safe);
+CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth, BOOL safe);
 CTCALL	BOOL	CTFrameBufferLock(PCTFrameBuffer fb);
 CTCALL	BOOL	CTFrameBufferUnlock(PCTFrameBuffer fb);
 CTCALL	BOOL	CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth);

@@ -52,62 +52,75 @@ CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb) {
 	return TRUE;
 }
 
-CTCALL	BOOL	CTFrameBufferSetEx(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth, BOOL lock) {
-	if (fb == NULL) {
-		CTErrorSetBadObject("CTFrameBufferSet failed: fb was NULL");
-		return FALSE;
-	}
-	if (pt.x > fb->width - 1 || pt.y > fb->height - 1) {
-		CTErrorSetParamValue("CTFrameBufferSet failed: pt was out of bounds");
-		return FALSE;
-	}
+CTCALL	BOOL	CTFrameBufferSetEx(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth, BOOL safe) {
+	
+	if (safe == TRUE) {
 
-	if (lock == TRUE)
+		if (fb == NULL) {
+			CTErrorSetBadObject("CTFrameBufferSet failed: fb was NULL");
+			return FALSE;
+		}
+		if (pt.x > fb->width - 1 || pt.y > fb->height - 1) {
+			CTErrorSetParamValue("CTFrameBufferSet failed: pt was out of bounds");
+			return FALSE;
+		}
+
 		CTLockEnter(fb->lock);
+	}
+		
 
 	UINT32 index		= pt.x + ((fb->height - pt.y - 1) * fb->width);
 	fb->color[index]	= col;
 	fb->depth[index]	= depth;
 
-	if (lock == TRUE)
+	if (safe == TRUE)
 		CTLockLeave(fb->lock);
 
 	return TRUE;
 }
 
-CTCALL	BOOL	CTFrameBufferDepthTestEx(PCTFrameBuffer fb, CTPoint pt, FLOAT depth, BOOL lock) {
-	if (fb == NULL) {
-		CTErrorSetBadObject("CTFrameBufferDepthTest failed: fb was NULL");
-		return FALSE;
+CTCALL	BOOL	CTFrameBufferDepthTestEx(PCTFrameBuffer fb, CTPoint pt, FLOAT depth, BOOL safe) {
+	
+	if (safe == TRUE) {
+
+		if (fb == NULL) {
+			CTErrorSetBadObject("CTFrameBufferDepthTest failed: fb was NULL");
+			return FALSE;
+		}
+		if (pt.x > fb->width - 1 || pt.y > fb->height - 1) {
+			CTErrorSetParamValue("CTFrameBufferDepthTest failed: pt was out of bounds");
+			return FALSE;
+		}
+
+		CTLockEnter(fb->lock);
 	}
-	if (pt.x > fb->width - 1 || pt.y > fb->height - 1) {
-		CTErrorSetParamValue("CTFrameBufferDepthTest failed: pt was out of bounds");
-		return FALSE;
-	}
+	
 
 	UINT32 index = pt.x + ((fb->height - pt.y - 1) * fb->width);
-
-	if (lock == TRUE)
-		CTLockEnter(fb->lock);
 	BOOL depthTest = fb->depth[index] > depth;
-	if (lock == TRUE)
+
+	if (safe == TRUE)
 		CTLockLeave(fb->lock);
 
 	return depthTest;
 }
 
-CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth, BOOL lock) {
-	if (fb == NULL) {
-		CTErrorSetBadObject("CTFrameBufferGet failed: fb was NULL");
-		return FALSE;
-	}
-	if (pt.x > fb->width - 1 || pt.y > fb->height - 1) {
-		CTErrorSetParamValue("CTFrameBufferGet failed: pt was out of bounds");
-		return FALSE;
-	}
+CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth, BOOL safe) {
 
-	if (lock == TRUE)
+	if (safe == TRUE) {
+
+		if (fb == NULL) {
+			CTErrorSetBadObject("CTFrameBufferGet failed: fb was NULL");
+			return FALSE;
+		}
+		if (pt.x > fb->width - 1 || pt.y > fb->height - 1) {
+			CTErrorSetParamValue("CTFrameBufferGet failed: pt was out of bounds");
+			return FALSE;
+		}
+
 		CTLockEnter(fb->lock);
+
+	}		
 
 	UINT32 index = pt.x + ((fb->height - pt.y - 1) * fb->width);
 
@@ -116,7 +129,7 @@ CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFL
 	if (pDepth != NULL)
 		*pDepth = fb->depth[index];
 
-	if (lock == TRUE)
+	if (safe == TRUE)
 		CTLockLeave(fb->lock);
 
 	return TRUE;
