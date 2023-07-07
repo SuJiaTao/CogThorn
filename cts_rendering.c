@@ -354,9 +354,9 @@ static BOOL __HCTRenderThreadPixShader(
 
 	// custom dithering alogrithm
 	if (applyDither == TRUE &&
-		pixColor.a  <= 250) {
+		pixColor.a  <= CT_RTHREAD_DITHER_MAX_ALPHA) {
 		
-		if (pixColor.a < 0.03)
+		if (pixColor.a < CT_RTHREAD_DITHER_MIN_ALPHA)
 			return FALSE;
 
 		FLOAT normalizedAlpha = (FLOAT)pixColor.a * 0.003921568627f;
