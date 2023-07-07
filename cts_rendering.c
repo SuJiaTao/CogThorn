@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 
-static void __HCTCallObjectGProc(PCTGO obj, UINT32 reason, PVOID input) {
+static __forceinline void __HCTCallObjectGProc(PCTGO obj, UINT32 reason, PVOID input) {
 	obj->gProc(
 		reason,
 		obj,
@@ -358,37 +358,10 @@ static BOOL __HCTRenderThreadPixShader(
 		break;
 	}
 
-	// custom dithering alogrithm
-	if (applyDither == TRUE &&
-		pixColor.a  <= CT_RTHREAD_DITHER_MAX_ALPHA) {
-		
-		if (pixColor.a < CT_RTHREAD_DITHER_MIN_ALPHA)
+	if (applyDither == TRUE) {
+		if ((CTRandomInt(CTRandomSeed()) & 255) > pixColor.a)
 			return FALSE;
-
-		if (pixColor.a < 128) {
-
-			UINT32 discardInterval = 18 - (pixColor.a >> 3);
-			UINT32 step = pixel->screenCoord.x + 
-				(pixel->screenCoord.y * (discardInterval >> 1)) + 
-				(pixel->screenCoord.y * (discardInterval >> 2));
-			if (step % discardInterval != 0) 
-				return FALSE;
-			
-		}
-		else
-		{
-
-			UINT32 discardInterval = 18 - ((255 - pixColor.a) >> 3);
-			UINT32 step = pixel->screenCoord.x +
-				(pixel->screenCoord.y * (discardInterval >> 1)) +
-				(pixel->screenCoord.y * (discardInterval >> 2));
-			if (step % discardInterval == 0)
-				return FALSE;
-
-		}
-
 		pixColor.a = 255;
-
 	}
 
 	pixel->color = pixColor;
@@ -407,7 +380,7 @@ static BOOL __HCTRenderThreadPixShader(
 	return keepPixel;
 }
 
-static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
+static __forceinline void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
 
 	if (object->mesh == NULL)
 		return;

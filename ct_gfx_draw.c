@@ -17,7 +17,7 @@ typedef struct __CTDrawInfo {
 } __CTDrawInfo, *P__CTDrawInfo;
 
 
-static void __HCTProcessAndDrawPixel(
+static __forceinline void __HCTProcessAndDrawPixel(
 	P__CTDrawInfo	drawInfo, 
 	UINT32			pixID, 
 	CTPoint			screenCoord, 
@@ -114,7 +114,7 @@ static void __HCTProcessAndDrawPixel(
 
 }
 
-static void __HCTDrawPoint(
+static __forceinline void __HCTDrawPoint(
 	P__CTDrawInfo	drawInfo,
 	UINT32			pixID,
 	CTPoint			screenCoord,
@@ -279,7 +279,7 @@ static void __HCTDrawPoint(
 
 }
 
-static UINT32 __HCTRealPixelsPerPointSize(UINT32 pointSize) {
+static __forceinline UINT32 __HCTRealPixelsPerPointSize(UINT32 pointSize) {
 
 	switch (pointSize) {
 
@@ -297,7 +297,7 @@ static UINT32 __HCTRealPixelsPerPointSize(UINT32 pointSize) {
 	return 1;
 }
 
-static void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawInfo drawInfo) {
+static __forceinline void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawInfo drawInfo) {
 
 	/// SUMMARY:
 	/// loop (all prims in prim list)
@@ -319,7 +319,7 @@ static void __HCTDrawPoints(PCTPrimitive primList, UINT32 primCount, P__CTDrawIn
 
 }
 
-static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo drawInfo) {
+static __forceinline void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo drawInfo) {
 	
 	FLOAT dx = prim2->vertex.x - prim1->vertex.x;
 	FLOAT dy = prim2->vertex.y - prim1->vertex.y;
@@ -358,7 +358,7 @@ static void __HCTDrawLine(PCTPrimitive prim1, PCTPrimitive prim2, P__CTDrawInfo 
 	
 }
 
-static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
+static __forceinline CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 
 	const CTVect vert = CTVectCreate(px, py);
 
@@ -387,7 +387,7 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 
 }
 
-static UINT32 __HCTDrawTriangleTop(
+static __forceinline UINT32 __HCTDrawTriangleTop(
 	UINT32 startPixID, 
 	PCTPrimitive prims, 
 	PCTPrimitive oldPrims, 
@@ -466,7 +466,7 @@ static UINT32 __HCTDrawTriangleTop(
 	return pixID;
 }
 
-static UINT32 __HCTDrawTriangleBottom(
+static __forceinline UINT32 __HCTDrawTriangleBottom(
 	UINT32 startPixID, 
 	PCTPrimitive prims, 
 	PCTPrimitive oldPrims,
@@ -545,7 +545,7 @@ static UINT32 __HCTDrawTriangleBottom(
 	return pixID;
 }
 
-static void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3, P__CTDrawInfo drawInfo) {
+static __forceinline void __HCTDrawTriangle(PCTPrimitive p1, PCTPrimitive p2, PCTPrimitive p3, P__CTDrawInfo drawInfo) {
 
 	/// SUMMARY:
 	/// sort primitives by height (p1 highest, p3 lowest)
