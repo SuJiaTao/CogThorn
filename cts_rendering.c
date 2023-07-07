@@ -233,6 +233,7 @@ CTCALL	BOOL		CTCameraLock(PCTCamera camera) {
 }
 
 CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
+
 	CTLockEnter(__ctdata.sys.rendering.lock);
 
 	if (camera == NULL) {
@@ -288,20 +289,20 @@ static void __HCTRenderThreadPrimShader(
 	}
 
 	CTMatrix camTform = CTMatrixIdentity();
-	camTform = CTMatrixScale(
-		camTform, 
-		data->camera->transform.scl
-	);
-	camTform = CTMatrixRotate(
-		camTform, 
-		data->camera->transform.rot * -1.0f
-	);
 	camTform = CTMatrixTranslate(
 		camTform, 
 		CTVectCreate(
 			data->camera->transform.pos.x * -1.0f,
 			data->camera->transform.pos.y * -1.0f
 		)
+	);
+	camTform = CTMatrixRotate(
+		camTform,
+		data->camera->transform.rot * -1.0f
+	);
+	camTform = CTMatrixScale(
+		camTform,
+		data->camera->transform.scl
 	);
 
 	prim->vertex = CTMatrixApply(
@@ -352,7 +353,7 @@ static BOOL __HCTRenderThreadPixShader(
 
 	// custom dithering alogrithm
 	if (applyDither == TRUE &&
-		pixColor.a  >= 250) {
+		pixColor.a  <= 250) {
 		
 		if (pixColor.a < 0.03)
 			return FALSE;
@@ -387,15 +388,18 @@ static BOOL __HCTRenderThreadPixShader(
 
 	pixel->color = pixColor;
 
+	BOOL keepPixel = TRUE;
 	if (data->object->subShader != NULL) {
 		if (data->object->subShader->subPixShader != NULL) {
-			data->object->subShader->subPixShader(
+			keepPixel = data->object->subShader->subPixShader(
 				ctx,
 				pixel,
 				data->object->gData
 			);
 		}
 	}
+
+	return keepPixel;
 }
 
 static void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera) {
@@ -487,77 +491,81 @@ void __CTRenderThreadProc(
 		break;
 
 	case CT_THREADPROC_REASON_SPIN:
-		
-		CTLockEnter(__ctdata.sys.rendering.lock);
 
 		/// SUMMARY:
-		/// loop (all graphics objects)
-		///		if (object is NOT VISIBLE) 
+		/// loop (all caermas)
+		///		if (camera is SIGNALED TO BE DESTROYED)
+		///			destroy camera
 		///			skip
-		///		if (object is SIGNALED TO BE DESTROYED)
-		///			CALL DESTROY
-		///			destroy object
+		///		if (camera's target is NULL)
 		///			skip
-		///		loop (all cameras)
-		///			if (camera is SIGNALED TO BE DESTROYED)
-		///				destroy camera
+		///		LOCK FRAMEBUFFER
+		///		CLEAR FRAMEBUFFER
+		///		loop (all objects)	
+		///			if (object is NOT VISIBLE) 
 		///				skip
-		///			if (camera's target is NULL)
+		///			if (object is SIGNALED TO BE DESTROYED)
+		///				CALL DESTROY
+		///				destroy object
 		///				skip
 		///			CALL PRE-RENDER
 		///			setup shader parameters
 		///			setup shader inputs
 		///			draw renderObject
 		///			CALL POST-RENDER
+		///		UNLOCK FRAMEBUFFER
 
-		CTLockLeave(__ctdata.sys.rendering.lock);
+		CTLockEnter(__ctdata.sys.rendering.lock);
+		PCTIterator camIter = CTIteratorCreate(__ctdata.sys.rendering.cameraList);
+		PCTCamera	camera  = NULL;
 
-		PCTIterator gObjIter = CTIteratorCreate(__ctdata.sys.rendering.objList);
-		PCTGO object		 = NULL;
-		while ((object = CTIteratorIterate(gObjIter)) != NULL) {
+		while ((camera = CTIteratorIterate(camIter)) != NULL) {
 
-			CTGraphicsObjectLock(object);
+			CTCameraLock(camera);
 
-			if (object->visible == FALSE) {
-				CTGraphicsObjectUnlock(object);
-				continue;
-			}
-
-			if (object->destroySignal == TRUE) {
-				__HCTCallObjectGProc(
-					object,
-					CT_GPROC_REASON_DESTROY,
-					NULL
-				);
-				CTGraphicsObjectUnlock(object);
-
-				CTLockDestroy(&object->lock);
-				CTFree(object->gData);
-
+			if (camera->destroySignal == TRUE) {
+				CTLockDestroy(&camera->lock);
 				CTDynListRemove(
-					__ctdata.sys.rendering.objList,
-					object
+					__ctdata.sys.rendering.cameraList,
+					camera
 				);
 				continue;
 			}
 
-			PCTIterator camIter = CTIteratorCreate(__ctdata.sys.rendering.cameraList);
-			PCTCamera camera	= NULL;
-			while ((camera = CTIteratorIterate(camIter)) != NULL) {
-				
-				CTCameraLock(camera);
+			if (camera->renderTarget == NULL) {
+				CTCameraUnlock(camera);
+				continue;
+			}
 
-				if (camera->destroySignal == TRUE) {
-					CTLockDestroy(&camera->lock);
-					CTDynListRemove(
-						__ctdata.sys.rendering.cameraList,
-						camera
-					);
+			CTFrameBufferLock(camera->renderTarget);
+			CTFrameBufferClear(camera->renderTarget, TRUE, TRUE);
+
+			PCTIterator gObjIter = CTIteratorCreate(__ctdata.sys.rendering.objList);
+			PCTGO		object	 = NULL;
+			while ((object = CTIteratorIterate(gObjIter)) != NULL) {
+
+				CTGraphicsObjectLock(object);
+
+				if (object->visible == FALSE) {
+					CTGraphicsObjectUnlock(object);
 					continue;
 				}
 
-				if (camera->renderTarget == NULL) {
-					CTCameraUnlock(camera);
+				if (object->destroySignal == TRUE) {
+					__HCTCallObjectGProc(
+						object,
+						CT_GPROC_REASON_DESTROY,
+						NULL
+					);
+					CTGraphicsObjectUnlock(object);
+
+					CTLockDestroy(&object->lock);
+					CTFree(object->gData);
+
+					CTDynListRemove(
+						__ctdata.sys.rendering.objList,
+						object
+					);
 					continue;
 				}
 
@@ -578,15 +586,18 @@ void __CTRenderThreadProc(
 					NULL
 				);
 
-			}
+				CTGraphicsObjectUnlock(object);
 
-			CTIteratorDestroy(&camIter);
+			} // END OBJECT LOOP
 
-			CTGraphicsObjectUnlock(object);
+			CTIteratorDestroy(&gObjIter);
+			CTFrameBufferUnlock(camera->renderTarget);
+			CTCameraUnlock(camera);
 
-		}
+		} // END CAMERA LOOP
 
-		CTIteratorDestroy(&gObjIter);
+		CTIteratorDestroy(&camIter);
+		CTLockLeave(__ctdata.sys.rendering.lock);
 
 		break;
 

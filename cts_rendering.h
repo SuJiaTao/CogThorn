@@ -28,7 +28,7 @@ typedef void (*PCTSUBSPRIM)(
 	PVOID			gData
 );
 
-typedef void (*PCTSUBSPIX)(
+typedef BOOL (*PCTSUBSPIX)(
 	CTPixCtx	pixCtx,
 	PCTPixel	pix,
 	PVOID		gData
