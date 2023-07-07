@@ -38,7 +38,6 @@ typedef struct CTSubShader {
 	BOOL		disableGTransform;
 	BOOL		disableGAlpha;
 	BOOL		disableGOutline;
-	BOOL		disableGDither;
 	PCTSUBSPRIM	subPrimShader;
 	PCTSUBSPIX	subPixShader;
 } CTSubShader, *PCTSubShader;
@@ -48,8 +47,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPIX	pixShader,
 	BOOL		disableGTransform,
 	BOOL		disableGAlpha,
-	BOOL		disableGOutline,
-	BOOL		disableGDither
+	BOOL		disableGOutline
 );
 #define CTSubShaderCreate(prim, pix) \
 	CTSubShaderCreateEx(prim, pix, FALSE, FALSE, FALSE, FALSE)

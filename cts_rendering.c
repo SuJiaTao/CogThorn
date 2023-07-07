@@ -24,8 +24,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPIX	pixShader,
 	BOOL		disableGTransform,
 	BOOL		disableGAlpha,
-	BOOL		disableGOutline,
-	BOOL		disableGDither
+	BOOL		disableGOutline
 ) {
 	PCTSubShader shader = CTGFXAlloc(sizeof(*shader));
 	shader->subPrimShader		= primShader;
@@ -33,7 +32,6 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	shader->disableGTransform	= disableGTransform;
 	shader->disableGAlpha		= disableGAlpha;
 	shader->disableGOutline		= disableGOutline;
-	shader->disableGDither		= disableGDither;
 
 	return shader;
 }
@@ -317,12 +315,10 @@ static BOOL __HCTRenderThreadPixShader(
 	PCTPixel			pixel,
 	P__CTRTShaderData	data
 ) {
-	BOOL applyDither	= TRUE;
 	BOOL applyOutline	= TRUE;
 	BOOL applyAlpha		= TRUE;
 	
 	if (data->object->subShader != NULL) {
-		applyDither		= !(data->object->subShader->disableGDither);
 		applyOutline	= !(data->object->subShader->disableGOutline);
 		applyAlpha		= !(data->object->subShader->disableGAlpha);
 	}
@@ -356,12 +352,6 @@ static BOOL __HCTRenderThreadPixShader(
 		}
 
 		break;
-	}
-
-	if (applyDither == TRUE) {
-		if ((CTRandomInt(CTRandomSeed()) & 255) > pixColor.a)
-			return FALSE;
-		pixColor.a = 255;
 	}
 
 	pixel->color = pixColor;

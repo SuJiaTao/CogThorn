@@ -57,11 +57,15 @@ CTCALL	CTColor			CTColorBlend(CTColor bottom, CTColor top) {
 	if (top.a == 255) {
 		return top;
 	}
+
+	if (top.a == 0) {
+		return bottom;
+	}
 	
 	CTColor rc = {
 		.r = __HCTClampColorChannel((((top.r - bottom.r) * top.a) >> 8) + bottom.r),
-		.g = __HCTClampColorChannel((((top.b - bottom.g) * top.a) >> 8) + bottom.g),
-		.b = __HCTClampColorChannel((((top.b - bottom.g) * top.a) >> 8) + bottom.b),
+		.g = __HCTClampColorChannel((((top.g - bottom.g) * top.a) >> 8) + bottom.g),
+		.b = __HCTClampColorChannel((((top.b - bottom.b) * top.a) >> 8) + bottom.b),
 		.a = __HCTClampColorChannel(255)
 	};
 	return rc;
