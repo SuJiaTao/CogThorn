@@ -244,7 +244,7 @@ CTCALL	BOOL		CTCameraSetTargetWindow(PCTCamera camera, PCTWin window) {
 	CTCameraLock(camera);
 	CTWindowLock(window);
 
-	camera->targetType		= CT_CAMERA_TARGET_TEXTURE;
+	camera->targetType		= CT_CAMERA_TARGET_WINDOW;
 	camera->targetTexture	= NULL;
 	camera->targetWindow	= window;
 
@@ -457,8 +457,6 @@ static __forceinline void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera
 	/// DRAW OBJECT OUTLINE
 	if (object->outlineSizePixels != 0) {
 
-		printf("drawing outline %p %d.\n", object, object->outlineSizePixels);
-
 		__ctdata.sys.rendering.shader->lineSizePixels = 
 			max(
 				CT_SHADER_LINESIZE_MIN, 
@@ -618,7 +616,8 @@ void __CTRenderThreadProc(
 			PCTFrameBuffer renderTarget = NULL;
 			if (camera->targetType == CT_CAMERA_TARGET_TEXTURE) {
 				renderTarget = camera->targetTexture;
-			} else {
+			}
+			if (camera->targetType == CT_CAMERA_TARGET_WINDOW) {
 				renderTarget = camera->targetWindow->frameBuffer;
 			}
 
@@ -681,7 +680,8 @@ void __CTRenderThreadProc(
 			CTFrameBufferUnlock(renderTarget);
 
 			if (camera->targetType == CT_CAMERA_TARGET_WINDOW) {
-				CTWindowRefresh(camera->targetWindow);
+				//puts("refreshing window...");
+				//CTWindowRefresh(camera->targetWindow);
 			}
 
 			CTCameraUnlock(camera);

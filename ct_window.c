@@ -49,7 +49,6 @@ static POINT __HCTCalculateWindowSize(PCTWindow win, DWORD targetWidth, DWORD ta
 
 static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
 
-
 	PCTWin ctwin = GetWindowLongPtrA(window, GWLP_USERDATA);
 
 	switch (message) {
@@ -375,7 +374,7 @@ CTCALL	BOOL	CTWindowRefresh(PCTWindow window) {
 
 	InvalidateRect(window->hwnd, NULL, FALSE);
 	UpdateWindow(window->hwnd);
-	
+
 	CTWindowUnlock(window);
 
 	return TRUE;
