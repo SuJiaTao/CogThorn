@@ -354,13 +354,28 @@ CTCALL	BOOL	CTWindowUpdate(PCTWindow window) {
 
 	CTWindowLock(window);
 
-	InvalidateRect(window->hwnd, NULL, FALSE);
-	UpdateWindow(window->hwnd);
+	CTWindowRefresh(window);
 
 	MSG messageBuff;
 	PeekMessageA(&messageBuff, window->hwnd, 0, 0, PM_REMOVE);
 	DispatchMessageA(&messageBuff);
 
+	CTWindowUnlock(window);
+
+	return TRUE;
+}
+
+CTCALL	BOOL	CTWindowRefresh(PCTWindow window) {
+	if (window == NULL) {
+		CTErrorSetBadObject("CTWindowRefresh failed because window was NULL");
+		return FALSE;
+	}
+
+	CTWindowLock(window);
+
+	InvalidateRect(window->hwnd, NULL, FALSE);
+	UpdateWindow(window->hwnd);
+	
 	CTWindowUnlock(window);
 
 	return TRUE;

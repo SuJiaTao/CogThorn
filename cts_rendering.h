@@ -115,19 +115,26 @@ CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
+#define CT_CAMERA_TARGET_NONE		0
+#define CT_CAMERA_TARGET_TEXTURE	1
+#define CT_CAMERA_TARGET_WINDOW		2
 typedef struct CTCamera {
 	PCTLock		lock;
 	CTTransform	transform;
-	PCTFB		renderTarget;
 	BOOL		destroySignal;
+	UINT32		targetType;
+	PCTFB		targetTexture;
+	PCTWin		targetWindow;
 } CTCamera, *PCTCamera;
 
 CTCALL	PCTCamera	CTCameraCreate(
 	CTVect	position,
 	CTVect	scale,
-	FLOAT	rotation,
-	PCTFB	renderTarget
+	FLOAT	rotation
 );
+CTCALL	BOOL		CTCameraClearTarget(PCTCamera camera);
+CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture);
+CTCALL	BOOL		CTCameraSetTargetWindow(PCTCamera camera, PCTWin window);
 CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera);
 CTCALL	BOOL		CTCameraLock(PCTCamera camera);
 CTCALL	BOOL		CTCameraUnlock(PCTCamera camera);

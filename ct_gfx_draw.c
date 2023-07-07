@@ -97,6 +97,9 @@ static void __HCTProcessAndDrawPixel(
 
 	}
 
+	if (pixel.color.a == 0)
+		return;
+
 	if (screenCoord.x != pixel.screenCoord.x || screenCoord.y != pixel.screenCoord.y) {
 
 		if (pixel.screenCoord.x >= drawInfo->frameBuffer->width ||

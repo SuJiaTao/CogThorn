@@ -170,8 +170,7 @@ CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject) {
 CTCALL	PCTCamera	CTCameraCreate(
 	CTVect	position,
 	CTVect	scale,
-	FLOAT	rotation,
-	PCTFB	renderTarget
+	FLOAT	rotation
 ) {
 	CTLockEnter(__ctdata.sys.rendering.lock);
 	CTDynListLock(__ctdata.sys.rendering.cameraList);
@@ -179,16 +178,82 @@ CTCALL	PCTCamera	CTCameraCreate(
 	PCTCamera cam		= CTDynListAdd(__ctdata.sys.rendering.cameraList);
 	cam->destroySignal	= FALSE;
 	cam->lock			= CTLockCreate();
-	cam->renderTarget	= renderTarget;
 	cam->transform.pos	= position;
 	cam->transform.rot	= rotation;
 	cam->transform.scl	= scale;
+	cam->targetType		= CT_CAMERA_TARGET_NONE;
+	cam->targetTexture	= NULL;
+	cam->targetWindow	= NULL;
 
 	CTDynListUnlock(__ctdata.sys.rendering.cameraList);
 	CTLockLeave(__ctdata.sys.rendering.lock);
 
 	return cam;
 }
+
+CTCALL	BOOL		CTCameraClearTarget(PCTCamera camera) {
+	if (camera == NULL) {
+		CTErrorSetBadObject("CTCameraClearTarget failed: camera was NULL");
+		return FALSE;
+	}
+
+	CTCameraLock(camera);
+
+	camera->targetType		= CT_CAMERA_TARGET_NONE;
+	camera->targetTexture	= NULL;
+	camera->targetWindow	= NULL;
+
+	CTCameraUnlock(camera);
+
+	return TRUE;
+}
+
+CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture) {
+	if (camera == NULL) {
+		CTErrorSetBadObject("CTCameraSetTargetTexture failed: camera was NULL");
+		return FALSE;
+	}
+	if (texture == NULL) {
+		CTErrorSetBadObject("CTCameraSetTargetTexture failed: texture was NULL");
+		return FALSE;
+	}
+
+	CTCameraLock(camera);
+	CTFrameBufferLock(texture);
+
+	camera->targetType		= CT_CAMERA_TARGET_TEXTURE;
+	camera->targetTexture	= texture;
+	camera->targetWindow	= NULL;
+
+	CTFrameBufferUnlock(texture);
+	CTCameraUnlock(camera);
+
+	return TRUE;
+}
+
+CTCALL	BOOL		CTCameraSetTargetWindow(PCTCamera camera, PCTWin window) {
+	if (camera == NULL) {
+		CTErrorSetBadObject("CTCameraSetTargetWindow failed: camera was NULL");
+		return FALSE;
+	}
+	if (window == NULL) {
+		CTErrorSetBadObject("CTCameraSetTargetWindow failed: window was NULL");
+		return FALSE;
+	}
+
+	CTCameraLock(camera);
+	CTWindowLock(window);
+
+	camera->targetType		= CT_CAMERA_TARGET_TEXTURE;
+	camera->targetTexture	= NULL;
+	camera->targetWindow	= window;
+
+	CTWindowUnlock(window);
+	CTCameraUnlock(camera);
+
+	return TRUE;
+}
+
 
 CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera) {
 	if (pCamera == NULL) {
@@ -249,6 +314,7 @@ CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
 typedef struct __CTRTShaderData {
 	PCTGO		object;
 	PCTCamera	camera;
+	PCTFB		renderTarget;
 } __CTRTShaderData, *P__CTRTShaderData;
 
 static void __HCTRenderThreadPrimShader(
@@ -375,9 +441,17 @@ static __forceinline void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera
 	if (object->mesh == NULL)
 		return;
 
+	PCTFB renderTarget = NULL;
+	if (camera->targetType == CT_CAMERA_TARGET_TEXTURE) {
+		renderTarget = camera->targetTexture;
+	} else {
+		renderTarget = camera->targetWindow->frameBuffer;
+	}
+
 	__CTRTShaderData shaderData = {
-					.object = object,
-					.camera = camera
+		.object			= object,
+		.camera			= camera,
+		.renderTarget	= renderTarget
 	};
 
 	/// DRAW OBJECT OUTLINE
@@ -396,7 +470,7 @@ static __forceinline void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera
 
 		CTDraw(
 			CT_DRAW_METHOD_LINES_CLOSED,
-			shaderData.camera->renderTarget,
+			renderTarget,
 			shaderData.object->mesh,
 			__ctdata.sys.rendering.shader,
 			&shaderData,
@@ -408,7 +482,7 @@ static __forceinline void __HCTDrawGraphicsObject(PCTGO object, PCTCamera camera
 	/// DRAW OBJECT
 	CTDraw(
 		CT_DRAW_METHOD_FILL,
-		shaderData.camera->renderTarget,
+		renderTarget,
 		shaderData.object->mesh,
 		__ctdata.sys.rendering.shader,
 		&shaderData,
@@ -474,8 +548,9 @@ void __CTRenderThreadProc(
 		///		if (camera is SIGNALED TO BE DESTROYED)
 		///			destroy camera
 		///			skip
-		///		if (camera's target is NULL)
+		///		if (camera has NO TARGET)
 		///			skip
+		///		get framebuffer
 		///		LOCK FRAMEBUFFER
 		///		CLEAR FRAMEBUFFER
 		///		loop (all objects)	
@@ -491,6 +566,8 @@ void __CTRenderThreadProc(
 		///			draw renderObject
 		///			CALL POST-RENDER
 		///			increment object age
+		///		if (camera is targeting window)
+		///			REFRESH WINDOW
 		///		UNLOCK FRAMEBUFFER
 
 		CTLockEnter(__ctdata.sys.rendering.lock);
@@ -533,13 +610,20 @@ void __CTRenderThreadProc(
 				continue;
 			}
 
-			if (camera->renderTarget == NULL) {
+			if (camera->targetType == CT_CAMERA_TARGET_NONE) {
 				CTCameraUnlock(camera);
 				continue;
 			}
 
-			CTFrameBufferLock(camera->renderTarget);
-			CTFrameBufferClear(camera->renderTarget, TRUE, TRUE);
+			PCTFrameBuffer renderTarget = NULL;
+			if (camera->targetType == CT_CAMERA_TARGET_TEXTURE) {
+				renderTarget = camera->targetTexture;
+			} else {
+				renderTarget = camera->targetWindow->frameBuffer;
+			}
+
+			CTFrameBufferLock(renderTarget);
+			CTFrameBufferClear(renderTarget, TRUE, TRUE);
 
 			PCTIterator gObjIter = CTIteratorCreate(__ctdata.sys.rendering.objList);
 			PCTGO		object	 = NULL;
@@ -594,7 +678,12 @@ void __CTRenderThreadProc(
 			} // END OBJECT LOOP
 
 			CTIteratorDestroy(&gObjIter);
-			CTFrameBufferUnlock(camera->renderTarget);
+			CTFrameBufferUnlock(renderTarget);
+
+			if (camera->targetType == CT_CAMERA_TARGET_WINDOW) {
+				CTWindowRefresh(camera->targetWindow);
+			}
+
 			CTCameraUnlock(camera);
 
 		} // END CAMERA LOOP
