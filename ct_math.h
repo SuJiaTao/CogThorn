@@ -22,7 +22,7 @@
 
 typedef struct CTVect {
 	FLOAT x, y;
-} CTVect, PCTVect;
+} CTVect, *PCTVect;
 
 CTCALL	CTVect	CTVectCreate(FLOAT x, FLOAT y);
 CTCALL	CTVect	CTVectAdd(CTVect v1, CTVect v2);
