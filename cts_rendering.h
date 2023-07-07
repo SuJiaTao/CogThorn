@@ -25,13 +25,13 @@
 typedef void (*PCTSUBSPRIM)(
 	CTPrimCtx		primCtx, 
 	PCTPrimitive	primitive,
-	PVOID			gData
+	PVOID			object
 );
 
 typedef BOOL (*PCTSUBSPIX)(
 	CTPixCtx	pixCtx,
 	PCTPixel	pix,
-	PVOID		gData
+	PVOID		object
 );
 
 typedef struct CTSubShader {
@@ -41,7 +41,7 @@ typedef struct CTSubShader {
 	BOOL		disableGDither;
 	PCTSUBSPRIM	subPrimShader;
 	PCTSUBSPIX	subPixShader;
-} CTSubSHader, *PCTSubShader;
+} CTSubShader, *PCTSubShader;
 
 CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPRIM primShader,

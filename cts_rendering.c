@@ -270,7 +270,7 @@ static void __HCTRenderThreadPrimShader(
 			data->object->subShader->subPrimShader(
 				ctx,
 				prim,
-				data->object->gData
+				data->object
 			);
 		}
 	}
@@ -403,7 +403,7 @@ __Dither:
 			keepPixel = data->object->subShader->subPixShader(
 				ctx,
 				pixel,
-				data->object->gData
+				data->object
 			);
 		}
 	}
