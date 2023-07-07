@@ -52,7 +52,7 @@ CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb) {
 	return TRUE;
 }
 
-CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth) {
+CTCALL	BOOL	CTFrameBufferSetEx(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth, BOOL lock) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferSet failed: fb was NULL");
 		return FALSE;
@@ -62,18 +62,20 @@ CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT d
 		return FALSE;
 	}
 
-	CTLockEnter(fb->lock);
+	if (lock == TRUE)
+		CTLockEnter(fb->lock);
 
 	UINT32 index		= pt.x + ((fb->height - pt.y - 1) * fb->width);
 	fb->color[index]	= col;
 	fb->depth[index]	= depth;
 
-	CTLockLeave(fb->lock);
+	if (lock == TRUE)
+		CTLockLeave(fb->lock);
 
 	return TRUE;
 }
 
-CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
+CTCALL	BOOL	CTFrameBufferDepthTestEx(PCTFrameBuffer fb, CTPoint pt, FLOAT depth, BOOL lock) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferDepthTest failed: fb was NULL");
 		return FALSE;
@@ -85,14 +87,16 @@ CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth) {
 
 	UINT32 index = pt.x + ((fb->height - pt.y - 1) * fb->width);
 
-	CTLockEnter(fb->lock);
+	if (lock == TRUE)
+		CTLockEnter(fb->lock);
 	BOOL depthTest = fb->depth[index] > depth;
-	CTLockLeave(fb->lock);
+	if (lock == TRUE)
+		CTLockLeave(fb->lock);
 
 	return depthTest;
 }
 
-CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth) {
+CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth, BOOL lock) {
 	if (fb == NULL) {
 		CTErrorSetBadObject("CTFrameBufferGet failed: fb was NULL");
 		return FALSE;
@@ -102,7 +106,8 @@ CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOA
 		return FALSE;
 	}
 
-	CTLockEnter(fb->lock);
+	if (lock == TRUE)
+		CTLockEnter(fb->lock);
 
 	UINT32 index = pt.x + ((fb->height - pt.y - 1) * fb->width);
 
@@ -111,7 +116,8 @@ CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOA
 	if (pDepth != NULL)
 		*pDepth = fb->depth[index];
 
-	CTLockLeave(fb->lock);
+	if (lock == TRUE)
+		CTLockLeave(fb->lock);
 
 	return TRUE;
 }

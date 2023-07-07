@@ -54,7 +54,7 @@ static void __HCTProcessAndDrawPixel(
 		screenCoord.x < 0 ||
 		screenCoord.y < 0) return;
 
-	if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE &&
+	if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 		drawInfo->shader->depthTest == TRUE) return;
 
 	CTPixCtx pixCtx = {
@@ -70,11 +70,12 @@ static void __HCTProcessAndDrawPixel(
 	};
 	
 	CTColor belowColor;
-	CTFrameBufferGet(
+	CTFrameBufferGetEx(
 		drawInfo->frameBuffer, 
 		screenCoord, 
 		&belowColor, 
-		NULL
+		NULL,
+		FALSE
 	);
 
 	if (drawInfo->shader->pixelShader != NULL) {
@@ -97,17 +98,18 @@ static void __HCTProcessAndDrawPixel(
 			pixel.screenCoord.x < 0 ||
 			pixel.screenCoord.y < 0) return;
 
-		if (CTFrameBufferDepthTest(drawInfo->frameBuffer, screenCoord, drawInfo->depth) == FALSE &&
+		if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 			drawInfo->shader->depthTest == TRUE) return;
 
 	}
 
 	CTColor newColor = CTColorBlend(belowColor, pixel.color);
-	CTFrameBufferSet(
+	CTFrameBufferSetEx(
 		drawInfo->frameBuffer,
 		pixel.screenCoord,
 		newColor,
-		drawInfo->depth
+		drawInfo->depth,
+		FALSE
 	);
 
 }

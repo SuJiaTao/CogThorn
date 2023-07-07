@@ -41,6 +41,7 @@ typedef struct CTThread {
 	PCTFUNCTHREADPROC	threadProc;
 	UINT64				threadSpinCount;
 	INT64				threadSpinIntervalMsec;
+	INT64				threadSpinLastIntervalMsec;
 	PCTDynList			threadTaskQueue;
 	BOOL				killSignal;
 } CTThread, *PCTThread;

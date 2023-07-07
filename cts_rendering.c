@@ -347,15 +347,16 @@ static BOOL __HCTRenderThreadPixShader(
 	}
 
 	if (applyTint == TRUE) {
-		// note: 0.003921568627f is a division by 255
+
+		// note: 0.0.00392156f is a division by 255
 		pixColor.r = 
-			(BYTE)((FLOAT)pixColor.r * (FLOAT)data->object->tintColor.r * 0.003921568627f);
+			(BYTE)((FLOAT)(pixColor.r * data->object->tintColor.r) * 0.00392156f);
 		pixColor.g =
-			(BYTE)((FLOAT)pixColor.g * (FLOAT)data->object->tintColor.g * 0.003921568627f);
+			(BYTE)((FLOAT)(pixColor.g * data->object->tintColor.g) * 0.00392156f);
 		pixColor.b =
-			(BYTE)((FLOAT)pixColor.b * (FLOAT)data->object->tintColor.b * 0.003921568627f);
+			(BYTE)((FLOAT)(pixColor.b * data->object->tintColor.b) * 0.00392156f);
 		pixColor.a =
-			(BYTE)((FLOAT)pixColor.a * (FLOAT)data->object->tintColor.a * 0.003921568627f);
+			(BYTE)((FLOAT)(pixColor.a * data->object->tintColor.a) * 0.00392156f);
 	}
 
 __Dither:
@@ -502,7 +503,9 @@ void __CTRenderThreadProc(
 	case CT_THREADPROC_REASON_SPIN:
 
 		/// SUMMARY:
-		/// loop (all caermas)
+		/// if (cycles % clean interval == 0)
+		///		clean camera/object buffers
+		/// loop (all cameras)
 		///		if (camera is SIGNALED TO BE DESTROYED)
 		///			destroy camera
 		///			skip
@@ -526,6 +529,29 @@ void __CTRenderThreadProc(
 		///		UNLOCK FRAMEBUFFER
 
 		CTLockEnter(__ctdata.sys.rendering.lock);
+
+		if ((thread->threadSpinCount % CT_RTHREAD_CLEAN_INTERVAL) == 0) {
+
+			UINT32 objCountBefore = __ctdata.sys.rendering.objList->elementsUsedCount;
+			UINT32 camCountBefore = __ctdata.sys.rendering.cameraList->elementsUsedCount;
+
+			CTDynListClean(__ctdata.sys.rendering.objList);
+			CTDynListClean(__ctdata.sys.rendering.cameraList);
+
+			UINT32 objCountAfter = __ctdata.sys.rendering.objList->elementsUsedCount;
+			UINT32 camCountAfter = __ctdata.sys.rendering.cameraList->elementsUsedCount;
+
+			puts("CTRT: cleaning...");
+
+			CTLogInfo(
+				__ctdata.sys.rendering.logStream,
+				"Cleaned %d Graphics Objects and %d Cameras",
+				objCountBefore - objCountAfter,
+				camCountBefore - camCountAfter
+			);
+
+		}
+
 		PCTIterator camIter = CTIteratorCreate(__ctdata.sys.rendering.cameraList);
 		PCTCamera	camera  = NULL;
 
@@ -610,6 +636,12 @@ void __CTRenderThreadProc(
 
 		CTIteratorDestroy(&camIter);
 		CTLockLeave(__ctdata.sys.rendering.lock);
+
+		printf(
+			"CTRT: objs: %d | %d msec taken...\n", 
+			__ctdata.sys.rendering.objList->elementsUsedCount,
+			thread->threadSpinLastIntervalMsec
+		);
 
 		break;
 

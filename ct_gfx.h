@@ -71,12 +71,19 @@ typedef struct CTFrameBuffer {
 
 CTCALL	PCTFB	CTFrameBufferCreate(UINT32 width, UINT32 height);
 CTCALL	BOOL	CTFrameBufferDestroy(PCTFrameBuffer* pfb);
-CTCALL	BOOL	CTFrameBufferSet(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth);
-CTCALL	BOOL	CTFrameBufferDepthTest(PCTFrameBuffer fb, CTPoint pt, FLOAT depth);
-CTCALL	BOOL	CTFrameBufferGet(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth);
+CTCALL	BOOL	CTFrameBufferSetEx(PCTFrameBuffer fb, CTPoint pt, CTColor col, FLOAT depth, BOOL lock);
+CTCALL	BOOL	CTFrameBufferDepthTestEx(PCTFrameBuffer fb, CTPoint pt, FLOAT depth, BOOL lock);
+CTCALL	BOOL	CTFrameBufferGetEx(PCTFrameBuffer fb, CTPoint pt, PCTColor pCol, PFLOAT pDepth, BOOL lock);
 CTCALL	BOOL	CTFrameBufferLock(PCTFrameBuffer fb);
 CTCALL	BOOL	CTFrameBufferUnlock(PCTFrameBuffer fb);
 CTCALL	BOOL	CTFrameBufferClear(PCTFrameBuffer fb, BOOL color, BOOL depth);
+
+#define CTFrameBufferSet(fb, pt, col, depth)	\
+	CTFrameBufferSetEx(fb, pt, col, depth, TRUE)
+#define CTFrameBufferDepthTest(fb, pt, depth)	\
+	CTFrameBufferDepthTestEx(fb, pt, depth, TRUE)
+#define CTFrameBufferGet(fb, pt, pCol, pDepth)	\
+	CTFrameBufferGetEx(fb, pt, pCol, pDepth, TRUE);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -225,14 +232,15 @@ CTCALL __forceinline CTColor CTSSample(PCTFB texture, CTVect UV, UINT32 sampleMe
 	UINT32 samplex = (UINT32)(UV.x * (FLOAT)(texture->width ));
 	UINT32 sampley = (UINT32)(UV.y * (FLOAT)(texture->height));
 
-	CTFrameBufferGet(
+	CTFrameBufferGetEx(
 		texture,
 		CTPointCreate(
 			samplex,
 			sampley
 		),
 		&retColor,
-		NULL
+		NULL,
+		FALSE
 	);
 
 __CTSSampleComplete:

@@ -44,12 +44,14 @@ CTCALL	CTColor			CTColorAdd(CTColor c1, CTColor c2) {
 
 CTCALL	CTColor			CTColorBlend(CTColor bottom, CTColor top) {
 
-	FLOAT alphaFactor = (FLOAT)top.a * 0.003921568627f; // division by 255
+	if (top.a == 255) {
+		return top;
+	}
 	
 	CTColor rc = {
-		.r = __HCTClampColorChannel((FLOAT)top.r * alphaFactor + (1.0f - alphaFactor) * (FLOAT)bottom.r),
-		.g = __HCTClampColorChannel((FLOAT)top.g * alphaFactor + (1.0f - alphaFactor) * (FLOAT)bottom.g),
-		.b = __HCTClampColorChannel((FLOAT)top.b * alphaFactor + (1.0f - alphaFactor) * (FLOAT)bottom.b),
+		.r = __HCTClampColorChannel((((top.r - bottom.r) * top.a) >> 8) + bottom.r),
+		.g = __HCTClampColorChannel((((top.b - bottom.g) * top.a) >> 8) + bottom.g),
+		.b = __HCTClampColorChannel((((top.b - bottom.g) * top.a) >> 8) + bottom.b),
 		.a = __HCTClampColorChannel(255)
 	};
 	return rc;
