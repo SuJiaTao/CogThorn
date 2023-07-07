@@ -91,6 +91,8 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		PAINTSTRUCT paintObj;
 		HDC paintDC = BeginPaint(ctwin->hwnd, &paintObj);
 
+		CTFrameBufferLock(ctwin->frameBuffer);
+
 		PCTFB frameBuffer = ctwin->frameBuffer;
 
 		BITMAP rbBitmap;
@@ -100,7 +102,13 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		rbBitmap.bmWidthBytes = frameBuffer->width * sizeof(CTColor);
 		rbBitmap.bmPlanes = 1;
 		rbBitmap.bmBitsPixel = 32;
-		rbBitmap.bmBits = frameBuffer->color;
+
+		const SIZE_T FB_COLOR_BYTES_TOTAL 
+			= frameBuffer->width * frameBuffer->height * sizeof(CTColor);
+		PBYTE frameBufferColorCopy = CTAlloc(FB_COLOR_BYTES_TOTAL);
+		__movsb(frameBufferColorCopy, frameBuffer->color, FB_COLOR_BYTES_TOTAL);
+
+		rbBitmap.bmBits = frameBufferColorCopy;
 
 		HBITMAP hBitMap = CreateBitmapIndirect(&rbBitmap);
 
@@ -130,6 +138,40 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		DWORD fbOffsetX = (winWidth  - fbDrawWidth)  / 2;
 		DWORD fbOffsetY = (winHeight - fbDrawHeight) / 2;
 
+		HBRUSH borderBrush = CreateSolidBrush(RGB(0, 0, 0));
+
+		RECT topBorder = {
+			.bottom = 0,
+			.top = fbOffsetY,
+			.left = 0,
+			.right = winWidth
+		};
+		RECT bottomBorder = {
+			.bottom = winHeight - fbOffsetY,
+			.top = winHeight,
+			.left = 0,
+			.right = winWidth
+		};
+		RECT leftBorder = {
+			.bottom = 0,
+			.top = winHeight,
+			.left = 0,
+			.right = fbOffsetX
+		};
+		RECT rightBorder = {
+			.bottom = 0,
+			.top = winHeight,
+			.left = winWidth - fbOffsetX,
+			.right = winWidth
+		};
+
+		FillRect(paintDC, &topBorder, borderBrush);
+		FillRect(paintDC, &bottomBorder, borderBrush);
+		FillRect(paintDC, &leftBorder, borderBrush);
+		FillRect(paintDC, &rightBorder, borderBrush);
+
+		CTFrameBufferUnlock(ctwin->frameBuffer);
+
 		BOOL drawResult = AlphaBlend(
 			paintDC, 
 			fbOffsetX,
@@ -142,44 +184,14 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 			blendFunc
 		);
 
-		HBRUSH borderBrush = CreateSolidBrush(RGB(0, 0, 0));
-
-		RECT topBorder = {
-			.bottom = 0,
-			.top	= fbOffsetY,
-			.left	= 0,
-			.right	= winWidth
-		};
-		RECT bottomBorder = {
-			.bottom = winHeight - fbOffsetY,
-			.top	= winHeight,
-			.left	= 0,
-			.right	= winWidth
-		};
-		RECT leftBorder = {
-			.bottom = 0,
-			.top	= winHeight,
-			.left	= 0,
-			.right	= fbOffsetX
-		};
-		RECT rightBorder = {
-			.bottom = 0,
-			.top	= winHeight,
-			.left	= winWidth - fbOffsetX,
-			.right	= winWidth
-		};
-
-		FillRect(paintDC, &topBorder, borderBrush);
-		FillRect(paintDC, &bottomBorder, borderBrush);
-		FillRect(paintDC, &leftBorder, borderBrush);
-		FillRect(paintDC, &rightBorder, borderBrush);
-
 		DeleteObject(borderBrush);
 
 		DeleteObject(hBitMap);
 		DeleteObject(bitmapDC);
 
 		EndPaint(ctwin->hwnd, &paintObj);
+
+		CTFree(frameBufferColorCopy);
 
 		break;
 	}
