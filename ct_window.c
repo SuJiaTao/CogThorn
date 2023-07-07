@@ -106,7 +106,7 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		const SIZE_T FB_COLOR_BYTES_TOTAL 
 			= frameBuffer->width * frameBuffer->height * sizeof(CTColor);
 		PBYTE frameBufferColorCopy = CTAlloc(FB_COLOR_BYTES_TOTAL);
-		__movsb(frameBufferColorCopy, frameBuffer->color, FB_COLOR_BYTES_TOTAL);
+		__movsd(frameBufferColorCopy, frameBuffer->color, FB_COLOR_BYTES_TOTAL >> 2);
 
 		rbBitmap.bmBits = frameBufferColorCopy;
 
