@@ -65,7 +65,7 @@ CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader);
 #define CT_GPROC_REASON_DESTROY		1
 #define CT_GPROC_REASON_PRE_RENDER	2
 #define CT_GPROC_REASON_POST_RENDER	3
-typedef (*PCTFUNCGOPROC)(
+typedef void (*PCTFUNCGOPROC)(
 	UINT32	reason,
 	PVOID	object,
 	PVOID	userInput
@@ -81,6 +81,7 @@ typedef struct CTTransform {
 typedef struct CTGObject {
 	BOOL			visible;
 	BOOL			destroySignal;
+	FLOAT			age;
 	PCTLock			lock;
 	UINT32			outlineSizePixels;
 	PCTFB			texture;

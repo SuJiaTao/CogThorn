@@ -83,6 +83,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	PCTGO obj	= CTDynListAdd(__ctdata.sys.rendering.objList);
 	ZeroMemory(obj, sizeof(*obj));
 	obj->destroySignal		= FALSE;
+	obj->age				= 0;
 	obj->lock				= CTLockCreate();
 	obj->gData				= CTAlloc(max(4, gDataSizeBytes));
 	obj->gDataSizeBytes		= gDataSizeBytes;
@@ -513,6 +514,7 @@ void __CTRenderThreadProc(
 		///			setup shader inputs
 		///			draw renderObject
 		///			CALL POST-RENDER
+		///			increment object age
 		///		UNLOCK FRAMEBUFFER
 
 		CTLockEnter(__ctdata.sys.rendering.lock);
@@ -585,6 +587,8 @@ void __CTRenderThreadProc(
 					CT_GPROC_REASON_POST_RENDER,
 					NULL
 				);
+
+				object->age += 1.0f;
 
 				CTGraphicsObjectUnlock(object);
 
