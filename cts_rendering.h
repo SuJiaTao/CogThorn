@@ -36,7 +36,7 @@ typedef BOOL (*PCTSUBSPIX)(
 
 typedef struct CTSubShader {
 	BOOL		disableGTransform;
-	BOOL		disableGTint;
+	BOOL		disableGAlpha;
 	BOOL		disableGOutline;
 	BOOL		disableGDither;
 	PCTSUBSPRIM	subPrimShader;
@@ -47,7 +47,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPRIM primShader,
 	PCTSUBSPIX	pixShader,
 	BOOL		disableGTransform,
-	BOOL		disableGTint,
+	BOOL		disableGAlpha,
 	BOOL		disableGOutline,
 	BOOL		disableGDither
 );
@@ -87,7 +87,7 @@ typedef struct CTGObject {
 	PCTFB			texture;
 	PCTMesh			mesh;
 	PCTSubShader	subShader;
-	CTColor			tintColor;
+	BYTE			alpha;
 	CTColor			outlineColor;
 	CTTForm			transform;
 	SIZE_T			gDataSizeBytes;

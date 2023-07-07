@@ -23,7 +23,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPRIM primShader,
 	PCTSUBSPIX	pixShader,
 	BOOL		disableGTransform,
-	BOOL		disableGTint,
+	BOOL		disableGAlpha,
 	BOOL		disableGOutline,
 	BOOL		disableGDither
 ) {
@@ -31,7 +31,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	shader->subPrimShader		= primShader;
 	shader->subPixShader		= pixShader;
 	shader->disableGTransform	= disableGTransform;
-	shader->disableGTint		= disableGTint;
+	shader->disableGAlpha		= disableGAlpha;
 	shader->disableGOutline		= disableGOutline;
 	shader->disableGDither		= disableGDither;
 
@@ -92,7 +92,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	obj->outlineColor		= CTColorCreate(0, 0, 0, 255);
 	obj->outlineSizePixels	= 1;
 	obj->subShader			= subShader;
-	obj->tintColor			= CTColorCreate(255, 255, 255, 255);
+	obj->alpha				= 255;
 	obj->transform.pos		= position;
 	obj->transform.rot		= rotation;
 	obj->transform.scl		= scale;
@@ -319,47 +319,44 @@ static BOOL __HCTRenderThreadPixShader(
 ) {
 	BOOL applyDither	= TRUE;
 	BOOL applyOutline	= TRUE;
-	BOOL applyTint		= TRUE;
+	BOOL applyAlpha		= TRUE;
 	
 	if (data->object->subShader != NULL) {
 		applyDither		= !(data->object->subShader->disableGDither);
 		applyOutline	= !(data->object->subShader->disableGOutline);
-		applyTint		= !(data->object->subShader->disableGTint);
+		applyAlpha		= !(data->object->subShader->disableGAlpha);
 	}
 
-	if (ctx.drawMethod == CT_DRAW_METHOD_LINES_CLOSED &&
-		applyOutline == FALSE)
-		return FALSE;
+	CTColor pixColor;
 
-	CTColor pixColor = CTColorCreate(255, 255, 255, 255);
+	switch (ctx.drawMethod)
+	{
+	case CT_DRAW_METHOD_LINES_CLOSED:
 
-	if (ctx.drawMethod == CT_DRAW_METHOD_LINES_CLOSED) {
+		if (applyOutline == FALSE)
+			return FALSE;
 		pixColor = data->object->outlineColor;
-		goto __Dither;
-	}
-	
-	if (data->object->texture != NULL) {
-		pixColor = CTSSample(
-			data->object->texture,
-			ctx.UV,
-			CTS_SAMPLE_METHOD_CUTOFF
-		);
-	}
+		break;
 
-	if (applyTint == TRUE) {
+	default:
 
-		// note: 0.0.00392156f is a division by 255
-		pixColor.r = 
-			(BYTE)((FLOAT)(pixColor.r * data->object->tintColor.r) * 0.00392156f);
-		pixColor.g =
-			(BYTE)((FLOAT)(pixColor.g * data->object->tintColor.g) * 0.00392156f);
-		pixColor.b =
-			(BYTE)((FLOAT)(pixColor.b * data->object->tintColor.b) * 0.00392156f);
-		pixColor.a =
-			(BYTE)((FLOAT)(pixColor.a * data->object->tintColor.a) * 0.00392156f);
+		if (data->object->texture == NULL) {
+			pixColor = CTColorCreate(255, 255, 255, 255);
+			
+		} else {
+			pixColor = CTSSample(
+				data->object->texture,
+				ctx.UV,
+				CTS_SAMPLE_METHOD_CUTOFF
+			);
+		}
+
+		if (applyAlpha == TRUE && data->object->alpha != 255) {
+			pixColor.a = (pixColor.a * data->object->alpha) >> 8;
+		}
+
+		break;
 	}
-
-__Dither:
 
 	// custom dithering alogrithm
 	if (applyDither == TRUE &&
@@ -368,14 +365,12 @@ __Dither:
 		if (pixColor.a < CT_RTHREAD_DITHER_MIN_ALPHA)
 			return FALSE;
 
-		FLOAT normalizedAlpha = (FLOAT)pixColor.a * 0.003921568627f;
-
 		if (pixColor.a < 128) {
 
-			UINT32 discardInterval = (1.0f / normalizedAlpha);
+			UINT32 discardInterval = 18 - (pixColor.a >> 3);
 			UINT32 step = pixel->screenCoord.x + 
 				(pixel->screenCoord.y * (discardInterval >> 1)) + 
-				(pixel->screenCoord.y * (discardInterval >> 3));
+				(pixel->screenCoord.y * (discardInterval >> 2));
 			if (step % discardInterval != 0) 
 				return FALSE;
 			
@@ -383,10 +378,10 @@ __Dither:
 		else
 		{
 
-			UINT32 discardInterval = (1.0f / (1.0f - normalizedAlpha));
+			UINT32 discardInterval = 18 - ((255 - pixColor.a) >> 3);
 			UINT32 step = pixel->screenCoord.x +
 				(pixel->screenCoord.y * (discardInterval >> 1)) +
-				(pixel->screenCoord.y * (discardInterval >> 3));
+				(pixel->screenCoord.y * (discardInterval >> 2));
 			if (step % discardInterval == 0)
 				return FALSE;
 

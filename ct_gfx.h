@@ -50,7 +50,8 @@ typedef struct CTColor {
 } CTColor, * PCTColor;
 
 CTCALL	CTColor			CTColorCreate(INT r, INT g, INT b, INT a);
-CTCALL	CTColor			CTColorMultipy(CTColor col, FLOAT factor);
+CTCALL	CTColor			CTColorScale(CTColor col, FLOAT factor);
+CTCALL	CTColor			CTColorMultiply(CTColor c1, CTColor c2);
 CTCALL	CTColor			CTColorAdd(CTColor c1, CTColor c2);
 CTCALL	CTColor			CTColorBlend(CTColor bottom, CTColor top);
 CTCALL	CTColor			CTColorBlendWeighted(CTColor c1, CTColor c2, FLOAT factor);

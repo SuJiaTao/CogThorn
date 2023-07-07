@@ -22,12 +22,22 @@ CTCALL	CTColor			CTColorCreate(INT r, INT g, INT b, INT a) {
 	return rc;
 }
 
-CTCALL	CTColor			CTColorMultipy(CTColor col, FLOAT factor) {
+CTCALL	CTColor			CTColorScale(CTColor col, FLOAT factor) {
 	CTColor rc = {
 		.r = __HCTClampColorChannel((FLOAT)col.r * factor),
 		.g = __HCTClampColorChannel((FLOAT)col.g * factor),
 		.b = __HCTClampColorChannel((FLOAT)col.b * factor),
 		.a = __HCTClampColorChannel((FLOAT)col.a * factor)
+	};
+	return rc;
+}
+
+CTCALL	CTColor			CTColorMultiply(CTColor c1, CTColor c2) {
+	CTColor rc = {
+		.r = __HCTClampColorChannel((c1.r * c2.r) >> 8),
+		.g = __HCTClampColorChannel((c1.g * c2.g) >> 8),
+		.b = __HCTClampColorChannel((c1.b * c2.b) >> 8),
+		.a = __HCTClampColorChannel((c1.a * c2.a) >> 8)
 	};
 	return rc;
 }
