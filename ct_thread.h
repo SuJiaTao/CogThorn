@@ -54,7 +54,7 @@ CTCALL	PCTThread	CTThreadCreate(
 	BOOL				blockUntilInitComplete
 );
 CTCALL	BOOL		CTThreadDestroy(PCTThread* pThread);
-CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID userInput);
+CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID userInput, BOOL sync);
 CTCALL	BOOL		CTThreadLock(PCTThread thread);
 CTCALL	BOOL		CTThreadUnlock(PCTThread thread);
 

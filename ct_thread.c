@@ -18,6 +18,7 @@ typedef struct __CTThreadInput {
 typedef struct __CTThreadTaskData {
 	PCTFUNCTHREADTASK	taskFunc;
 	PVOID				userInput;
+	HANDLE				taskCompleteMsg;
 } __CTThreadTaskData, *P__CTThreadTaskData;
 
 static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
@@ -79,6 +80,9 @@ static DWORD __HCTThreadProc(P__CTThreadInput threadInput) {
 				thread->threadData,
 				task->userInput
 			);
+
+			if (task->taskCompleteMsg != NULL)
+				SetEvent(task->taskCompleteMsg);
 		}
 
 		CTIteratorDestroy(&taskIter);
@@ -214,7 +218,7 @@ CTCALL	BOOL		CTThreadDestroy(PCTThread* pThread) {
 	return TRUE;
 }
 
-CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID userInput) {
+CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID userInput, BOOL sync) {
 	if (thread == NULL) {
 		CTErrorSetBadObject("CTThreadTask failed: thread was NULL");
 		return FALSE;
@@ -234,11 +238,24 @@ CTCALL	BOOL		CTThreadTask(PCTThread thread, PCTFUNCTHREADTASK pfTask, PVOID user
 	CTDynListLock(thread->threadTaskQueue);
 
 	P__CTThreadTaskData task = CTDynListAdd(thread->threadTaskQueue);
-	task->userInput	= userInput;
-	task->taskFunc	= pfTask;
+	task->userInput			= userInput;
+	task->taskFunc			= pfTask;
+	task->taskCompleteMsg	= NULL;
+
+	HANDLE completeEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
+	if (sync == TRUE) {
+		task->taskCompleteMsg = completeEvent;
+	}
 
 	CTDynListUnlock(thread->threadTaskQueue);
 	CTLockLeave(thread->threadLock);
+
+	if (sync == TRUE) {
+		puts("waiting for sync object");
+		WaitForSingleObject(completeEvent, INFINITE);
+	}
+
+	CloseHandle(completeEvent);
 
 	return TRUE;
 }

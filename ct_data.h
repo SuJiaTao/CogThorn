@@ -51,6 +51,7 @@ struct {
 			PCTLogStream	logStream;
 			PCTDynList		objList;
 			PCTDynList		cameraList;
+			PCTDynList		surfaceList;
 			PCTShader		shader;
 		} rendering;
 

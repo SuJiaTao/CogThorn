@@ -111,20 +111,43 @@ CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
+///								SURFACE OBJECT
+/// 
+//////////////////////////////////////////////////////////////////////////////
+
+typedef struct CTSurface {
+	PCTLock		lock;
+	BOOL		destroySignal;
+	PCTWindow	window;
+	PCTFB		frameBuffer;
+} CTSurface, *PCTSurface;
+
+CTCALL	PCTSurface	CTSurfaceCreate(
+	PCHAR	title,
+	UINT32	windowType,
+	UINT32	width,
+	UINT32	height,
+	UINT32	resX,
+	UINT32	resY
+);
+CTCALL	BOOL		CTSurfaceDestroy(PCTSurface* pSurface);
+
+//////////////////////////////////////////////////////////////////////////////
+///
 ///								CAMERA OBJECT
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
 #define CT_CAMERA_TARGET_NONE		0
 #define CT_CAMERA_TARGET_TEXTURE	1
-#define CT_CAMERA_TARGET_WINDOW		2
+#define CT_CAMERA_TARGET_SURFACE	2
 typedef struct CTCamera {
 	PCTLock		lock;
 	CTTransform	transform;
 	BOOL		destroySignal;
 	UINT32		targetType;
 	PCTFB		targetTexture;
-	PCTWin		targetWindow;
+	PCTSurface	targetSurface;
 } CTCamera, *PCTCamera;
 
 CTCALL	PCTCamera	CTCameraCreate(
@@ -134,7 +157,7 @@ CTCALL	PCTCamera	CTCameraCreate(
 );
 CTCALL	BOOL		CTCameraClearTarget(PCTCamera camera);
 CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture);
-CTCALL	BOOL		CTCameraSetTargetWindow(PCTCamera camera, PCTWin window);
+CTCALL	BOOL		CTCameraSetTargetSurface(PCTCamera camera, PCTSurface surface);
 CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera);
 CTCALL	BOOL		CTCameraLock(PCTCamera camera);
 CTCALL	BOOL		CTCameraUnlock(PCTCamera camera);
@@ -148,6 +171,7 @@ CTCALL	BOOL		CTCameraUnlock(PCTCamera camera);
 #define CT_RTHREAD_SPINTIME_MSEC		(1000 / 40)
 #define CT_RTHREAD_GOBJ_NODE_SIZE		1024
 #define CT_RTHREAD_CAMERA_NODE_SIZE		32
+#define CT_RTHREAD_SURFACE_NODE_SIZE	32
 #define CT_RTHREAD_CLEAN_INTERVAL		(1250 / (CT_RTHREAD_SPINTIME_MSEC))
 #define CT_RTHREAD_DITHER_MAX_ALPHA		247
 #define CT_RTHREAD_DITHER_MIN_ALPHA		7
