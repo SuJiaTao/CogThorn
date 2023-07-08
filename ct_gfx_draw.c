@@ -23,6 +23,14 @@ static __forceinline FLOAT __HCTFloatRcp(FLOAT flt) {
 	return flt;
 }
 
+static __forceinline BOOL __HCTIsInRangeI(INT low, INT high, INT testVal) {
+	return ((testVal - low) * (testVal - high)) <= 0;
+}
+
+static __forceinline BOOL __HCTIsInRangeF(FLOAT low, FLOAT high, FLOAT testVal) {
+	return ((testVal - low) * (testVal - high)) <= 0.0f;
+}
+
 static void __HCTProcessAndDrawPixel(
 	P__CTDrawInfo	drawInfo, 
 	UINT32			pixID, 
@@ -55,10 +63,8 @@ static void __HCTProcessAndDrawPixel(
 	/// generate blended color
 	/// set frameBuffer pixel to blended color
 
-	if (screenCoord.x >= drawInfo->frameBuffer->width	||
-		screenCoord.y >= drawInfo->frameBuffer->height	||
-		screenCoord.x < 0 ||
-		screenCoord.y < 0) return;
+	if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width - 1,  screenCoord.x) == FALSE) return;
+	if (__HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
 
 	if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 		drawInfo->shader->depthTest == TRUE) return;
@@ -100,12 +106,10 @@ static void __HCTProcessAndDrawPixel(
 	if (pixel.color.a == 0)
 		return;
 
-	if (screenCoord.x != pixel.screenCoord.x || screenCoord.y != pixel.screenCoord.y) {
+	if ((screenCoord.x ^ pixel.screenCoord.x) != 0 || (screenCoord.y ^ pixel.screenCoord.y) != 0) {
 
-		if (pixel.screenCoord.x >= drawInfo->frameBuffer->width ||
-			pixel.screenCoord.y >= drawInfo->frameBuffer->height ||
-			pixel.screenCoord.x < 0 ||
-			pixel.screenCoord.y < 0) return;
+		if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width  - 1, screenCoord.x) == FALSE) return;
+		if (__HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
 
 		if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 			drawInfo->shader->depthTest == TRUE) return;
@@ -639,8 +643,6 @@ CTCALL	BOOL		CTDraw(
 		return FALSE;
 	}
 
-	CTFrameBufferLock(frameBuffer);
-
 	/// SUMMARY:
 	/// create copy of shader input
 	/// create copy of mesh primitives
@@ -798,13 +800,11 @@ DrawFuncSucess:
 
 	CTGFXFree(shaderInputCopy);
 	CTGFXFree(processedPrimList);
-	CTFrameBufferUnlock(frameBuffer);
 	return TRUE;
 
 DrawFuncFailure:
 
 	CTGFXFree(shaderInputCopy);
 	CTGFXFree(processedPrimList);
-	CTFrameBufferUnlock(frameBuffer);
 	return FALSE;
 }

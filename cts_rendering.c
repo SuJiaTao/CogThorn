@@ -82,7 +82,6 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	ZeroMemory(obj, sizeof(*obj));
 	obj->destroySignal		= FALSE;
 	obj->age				= 0;
-	obj->lock				= CTLockCreate();
 	obj->gData				= CTAlloc(max(4, gDataSizeBytes));
 	obj->gDataSizeBytes		= gDataSizeBytes;
 	obj->mesh				= mesh;
@@ -127,44 +126,12 @@ CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject) {
 		return FALSE;
 	}
 
-	CTGraphicsObjectLock(object);
 	object->destroySignal = TRUE;
-	CTGraphicsObjectUnlock(object);
 
 	*pGObject = NULL;
 
 	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
-}
-
-CTCALL	BOOL	CTGraphicsObjectLock(PCTGO gObject) {
-	
-	CTLockEnter(__ctdata.sys.rendering.lock);
-
-	if (gObject == NULL) {
-		CTErrorSetBadObject("CTGraphicsObjectLock failed: gObject was NULL");
-		CTLockLeave(__ctdata.sys.rendering.lock);
-		return FALSE;
-	}
-
-	CTLockLeave(__ctdata.sys.rendering.lock);
-	return TRUE;
-
-}
-
-CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject) {
-
-	CTLockEnter(__ctdata.sys.rendering.lock);
-
-	if (gObject == NULL) {
-		CTErrorSetBadObject("CTGraphicsObjectUnlock failed: gObject was NULL");
-		CTLockLeave(__ctdata.sys.rendering.lock);
-		return FALSE;
-	}
-
-	CTLockLeave(__ctdata.sys.rendering.lock);
-	return TRUE;
-
 }
 
 typedef struct __CTSurfCreateDat {
@@ -176,7 +143,6 @@ typedef struct __CTSurfCreateDat {
 
 static void __HCTSurfaceCreateFunc(PCTThread thread, PVOID threadData, P__CTSurfCreateDat dat) {
 	PCTSurface surface		= CTDynListAdd(__ctdata.sys.rendering.surfaceList);
-	surface->lock			= CTLockCreate();
 	surface->destroySignal	= FALSE;
 	surface->window			= CTWindowCreate(
 		dat->winType,
@@ -245,10 +211,8 @@ CTCALL	BOOL		CTSurfaceDestroy(PCTSurface* pSurface) {
 		return FALSE;
 	}
 
-	CTLockEnter(surface->lock);
 	surface->destroySignal = TRUE;
 	*pSurface = NULL;
-	CTLockLeave(surface->lock);
 	
 	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
@@ -264,7 +228,6 @@ typedef struct __CTCamCreateData {
 static void __HCTCameraCreateTask(PCTThread thread, PVOID threadData, P__CTCamCreateData dat) {
 	PCTCamera cam		= CTDynListAdd(__ctdata.sys.rendering.cameraList);
 	cam->destroySignal	= FALSE;
-	cam->lock			= CTLockCreate();
 	cam->transform.pos	= dat->pos;
 	cam->transform.rot	= dat->rot;
 	cam->transform.scl	= dat->scl;
@@ -299,25 +262,20 @@ CTCALL	PCTCamera	CTCameraCreate(
 
 CTCALL	BOOL		CTCameraClearTarget(PCTCamera camera) {
 
-	CTLockEnter(__ctdata.sys.rendering.lock);
-
 	if (camera == NULL) {
 		CTErrorSetBadObject("CTCameraClearTarget failed: camera was NULL");
-		CTLockLeave(__ctdata.sys.rendering.lock);
 		return FALSE;
 	}
 
-	CTCameraLock(camera);
+	CTLockEnter(__ctdata.sys.rendering.lock);
 
 	camera->targetType		= CT_CAMERA_TARGET_NONE;
 	camera->targetTexture	= NULL;
 	camera->targetSurface	= NULL;
 
-	CTCameraUnlock(camera);
-
 	CTLockLeave(__ctdata.sys.rendering.lock);
-	return TRUE;
 
+	return TRUE;
 }
 
 CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture) {
@@ -334,7 +292,6 @@ CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture) {
 		return FALSE;
 	}
 
-	CTCameraLock(camera);
 	CTFrameBufferLock(texture);
 
 	camera->targetType		= CT_CAMERA_TARGET_TEXTURE;
@@ -342,7 +299,6 @@ CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture) {
 	camera->targetSurface	= NULL;
 
 	CTFrameBufferUnlock(texture);
-	CTCameraUnlock(camera);
 
 	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
@@ -363,15 +319,9 @@ CTCALL	BOOL		CTCameraSetTargetSurface(PCTCamera camera, PCTSurface surface) {
 		return FALSE;
 	}
 
-	CTCameraLock(camera);
-	CTLockEnter(surface->lock);
-
 	camera->targetType		= CT_CAMERA_TARGET_SURFACE;
 	camera->targetTexture	= NULL;
 	camera->targetSurface	= surface;
-
-	CTLockLeave(surface->lock);
-	CTCameraUnlock(camera);
 
 	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
@@ -393,43 +343,9 @@ CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera) {
 		return FALSE;
 	}
 
-	CTCameraLock(camera);
 	camera->destroySignal = TRUE;
-	CTCameraUnlock(camera);
-
 	*pCamera = NULL;
 
-	CTLockLeave(__ctdata.sys.rendering.lock);
-	return TRUE;
-}
-
-CTCALL	BOOL		CTCameraLock(PCTCamera camera) {
-
-	CTLockEnter(__ctdata.sys.rendering.lock);
-
-	if (camera == NULL) {
-		CTErrorSetBadObject("CTCameraLock failed: camera was NULL");
-		CTLockLeave(__ctdata.sys.rendering.lock);
-		return FALSE;
-	}
-
-	CTLockEnter(camera->lock);
-	CTLockLeave(__ctdata.sys.rendering.lock);
-	return TRUE;
-
-}
-
-CTCALL	BOOL		CTCameraUnlock(PCTCamera camera) {
-
-	CTLockEnter(__ctdata.sys.rendering.lock);
-
-	if (camera == NULL) {
-		CTErrorSetBadObject("CTCameraUnlock failed: camera was NULL");
-		CTLockLeave(__ctdata.sys.rendering.lock);
-		return FALSE;
-	}
-
-	CTLockLeave(camera->lock);
 	CTLockLeave(__ctdata.sys.rendering.lock);
 	return TRUE;
 }
@@ -731,10 +647,7 @@ void __CTRenderThreadProc(
 
 		while ((camera = CTIteratorIterate(camIter)) != NULL) {
 
-			CTCameraLock(camera);
-
 			if (camera->destroySignal == TRUE) {
-				CTLockDestroy(&camera->lock);
 				CTDynListRemove(
 					__ctdata.sys.rendering.cameraList,
 					camera
@@ -743,7 +656,6 @@ void __CTRenderThreadProc(
 			}
 
 			if (camera->targetType == CT_CAMERA_TARGET_NONE) {
-				CTCameraUnlock(camera);
 				continue;
 			}
 
@@ -762,28 +674,23 @@ void __CTRenderThreadProc(
 			PCTGO		object	 = NULL;
 			while ((object = CTIteratorIterate(gObjIter)) != NULL) {
 
-				CTGraphicsObjectLock(object);
-
 				if (object->visible == FALSE) {
-					CTGraphicsObjectUnlock(object);
 					continue;
 				}
 
 				if (object->destroySignal == TRUE) {
+
 					__HCTCallObjectGProc(
 						object,
 						CT_GPROC_REASON_DESTROY,
 						NULL
 					);
-					CTGraphicsObjectUnlock(object);
-
-					CTLockDestroy(&object->lock);
 					CTFree(object->gData);
-
 					CTDynListRemove(
 						__ctdata.sys.rendering.objList,
 						object
 					);
+
 					continue;
 				}
 
@@ -806,14 +713,10 @@ void __CTRenderThreadProc(
 
 				object->age += 1.0f;
 
-				CTGraphicsObjectUnlock(object);
-
 			} // END OBJECT LOOP
 
 			CTIteratorDestroy(&gObjIter);
 			CTFrameBufferUnlock(renderTarget);
-
-			CTCameraUnlock(camera);
 
 		} // END CAMERA LOOP
 
@@ -823,18 +726,13 @@ void __CTRenderThreadProc(
 		PCTSurface	surface	 = NULL;
 		while ((surface = CTIteratorIterate(surfIter)) != NULL) {
 
-			CTLockEnter(surface->lock);
-
 			if (surface->destroySignal == TRUE) {
-				CTLockDestroy(&surface->lock);
 				CTWindowDestroy(&surface->window);
 				CTDynListRemove(__ctdata.sys.rendering.surfaceList, surface);
 				continue;
 			}
 
 			CTWindowUpdate(surface->window);
-
-			CTLockLeave(surface->lock);
 
 		}
 

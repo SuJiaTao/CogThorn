@@ -80,7 +80,6 @@ typedef struct CTGObject {
 	BOOL			visible;
 	BOOL			destroySignal;
 	FLOAT			age;
-	PCTLock			lock;
 	UINT32			outlineSizePixels;
 	PCTFB			texture;
 	PCTMesh			mesh;
@@ -106,8 +105,6 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	PVOID			initInput
 );
 CTCALL	BOOL	CTGraphicsObjectDestroy(PCTGO* pGObject);
-CTCALL	BOOL	CTGraphicsObjectLock(PCTGO gObject);
-CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
@@ -116,7 +113,6 @@ CTCALL	BOOL	CTGraphicsObjectUnlock(PCTGO gObject);
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTSurface {
-	PCTLock		lock;
 	BOOL		destroySignal;
 	PCTWindow	window;
 	PCTFB		frameBuffer;
@@ -142,7 +138,6 @@ CTCALL	BOOL		CTSurfaceDestroy(PCTSurface* pSurface);
 #define CT_CAMERA_TARGET_TEXTURE	1
 #define CT_CAMERA_TARGET_SURFACE	2
 typedef struct CTCamera {
-	PCTLock		lock;
 	CTTransform	transform;
 	BOOL		destroySignal;
 	UINT32		targetType;
@@ -159,8 +154,6 @@ CTCALL	BOOL		CTCameraClearTarget(PCTCamera camera);
 CTCALL	BOOL		CTCameraSetTargetTexture(PCTCamera camera, PCTFB texture);
 CTCALL	BOOL		CTCameraSetTargetSurface(PCTCamera camera, PCTSurface surface);
 CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera);
-CTCALL	BOOL		CTCameraLock(PCTCamera camera);
-CTCALL	BOOL		CTCameraUnlock(PCTCamera camera);
 
 //////////////////////////////////////////////////////////////////////////////
 ///
