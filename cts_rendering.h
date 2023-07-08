@@ -162,7 +162,7 @@ CTCALL	BOOL		CTCameraDestroy(PCTCamera* pCamera);
 //////////////////////////////////////////////////////////////////////////////
 
 #define CT_RTHREAD_SPINTIME_MSEC		(1000 / 40)
-#define CT_RTHREAD_GOBJ_NODE_SIZE		1024
+#define CT_RTHREAD_GOBJ_NODE_SIZE		2048
 #define CT_RTHREAD_CAMERA_NODE_SIZE		32
 #define CT_RTHREAD_SURFACE_NODE_SIZE	32
 #define CT_RTHREAD_CLEAN_INTERVAL		(1250 / (CT_RTHREAD_SPINTIME_MSEC))

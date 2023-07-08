@@ -18,16 +18,16 @@ typedef struct __CTDrawInfo {
 	FLOAT		depth;
 } __CTDrawInfo, *P__CTDrawInfo;
 
-static __forceinline FLOAT __HCTFloatRcp(FLOAT flt) {
+static FLOAT __HCTFloatRcp(FLOAT flt) {
 	_mm_store_ss(&flt, _mm_rcp_ss(_mm_set_ss(flt)));
 	return flt;
 }
 
-static __forceinline BOOL __HCTIsInRangeI(INT low, INT high, INT testVal) {
+static BOOL __HCTIsInRangeI(INT low, INT high, INT testVal) {
 	return ((testVal - low) * (testVal - high)) <= 0;
 }
 
-static __forceinline BOOL __HCTIsInRangeF(FLOAT low, FLOAT high, FLOAT testVal) {
+static BOOL __HCTIsInRangeF(FLOAT low, FLOAT high, FLOAT testVal) {
 	return ((testVal - low) * (testVal - high)) <= 0.0f;
 }
 
@@ -63,8 +63,8 @@ static void __HCTProcessAndDrawPixel(
 	/// generate blended color
 	/// set frameBuffer pixel to blended color
 
-	if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width - 1,  screenCoord.x) == FALSE) return;
-	if (__HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
+	if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width - 1,  screenCoord.x) == FALSE ||
+	    __HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
 
 	if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 		drawInfo->shader->depthTest == TRUE) return;
@@ -106,10 +106,10 @@ static void __HCTProcessAndDrawPixel(
 	if (pixel.color.a == 0)
 		return;
 
-	if ((screenCoord.x ^ pixel.screenCoord.x) != 0 || (screenCoord.y ^ pixel.screenCoord.y) != 0) {
+	if (((screenCoord.x ^ pixel.screenCoord.x) | (screenCoord.y ^ pixel.screenCoord.y)) != 0) {
 
-		if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width  - 1, screenCoord.x) == FALSE) return;
-		if (__HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
+		if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width - 1, screenCoord.x) == FALSE ||
+			__HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
 
 		if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 			drawInfo->shader->depthTest == TRUE) return;
@@ -127,7 +127,7 @@ static void __HCTProcessAndDrawPixel(
 
 }
 
-static __forceinline void __HCTDrawPoint(
+static void __HCTDrawPoint(
 	P__CTDrawInfo	drawInfo,
 	UINT32			pixID,
 	CTPoint			screenCoord,
@@ -292,7 +292,7 @@ static __forceinline void __HCTDrawPoint(
 
 }
 
-static __forceinline UINT32 __HCTRealPixelsPerPointSize(UINT32 pointSize) {
+static UINT32 __HCTRealPixelsPerPointSize(UINT32 pointSize) {
 
 	switch (pointSize) {
 
