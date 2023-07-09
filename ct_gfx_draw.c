@@ -375,8 +375,22 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	v1 = _mm_mul_ps(v1, v2);	// v1 now holds (AB, CD, AA, AA)
 	v1 = _mm_hadd_ps(v1, v1);	// v1[0] now holds AB+CD
 	v1 = _mm_rcp_ss(v1);		// v1[0] is now 1/v1[0]
+	v3 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 0, 0)); // v3 is now ALL 1/v1[0] (the RCP denominator)
 
 	const FLOAT invDenom = _mm_cvtss_f32(v1);
+
+	v1 = _mm_set_ps(p2.y, p3.x, p3.y, p1.x);
+	v2 = _mm_set_ps(p3.y, p2.x, p1.y, p3.x);
+	// numerator1 should be (S * dv3x) + (T * dv3y)
+	// numerator2 should be (U * dv3x) + (V * dv3y)
+	v1 = _mm_sub_ps(v1, v2);	// v1 is now (S, T, U, V)
+	v2 = _mm_set_ps(vert.x, p3.x, vert.y, p3.y);
+	v2 = _mm_hsub_ps(v2, v2);	// v2 is now (dv3x, dv3y, dv3x, dv3y)
+	v1 = _mm_mul_ps(v1, v2);	// v1 is now (S * dv3x, T * dv3y, U * dv3x, V * dv3y)
+	v1 = _mm_hadd_ps(v1, v1);	// v1[0] is now (S * dv3x) + (T * dv3y) which is numerator1
+								// v1[1] is now (U * dv3x) + (V * dv3y) which is numerator2
+	v3 = _mm_mul_ps(v1, v3);	// v3[0] is now numerator1 / denominator
+								// v3[1] is now numerator2 / denominator
 	
 	const FLOAT dv3x = vert.x - p3.x;
 	const FLOAT dv3y = vert.y - p3.y;
