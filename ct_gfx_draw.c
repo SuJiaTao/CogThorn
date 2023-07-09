@@ -23,12 +23,8 @@ static FLOAT __HCTFloatRcp(FLOAT flt) {
 	return flt;
 }
 
-static BOOL __HCTIsInRangeI(INT low, INT high, INT testVal) {
-	return ((testVal - low) * (testVal - high)) <= 0;
-}
-
-static BOOL __HCTIsInRangeF(FLOAT low, FLOAT high, FLOAT testVal) {
-	return ((testVal - low) * (testVal - high)) <= 0.0f;
+static __forceinline BOOL __HCTIsInRange(INT low, INT high, INT testVal) {
+	return (low <= testVal && high >= testVal);
 }
 
 static void __HCTProcessAndDrawPixel(
@@ -39,7 +35,8 @@ static void __HCTProcessAndDrawPixel(
 ) {
 
 	/// SUMMARY:
-	/// if (point is out of bounds)
+	/// 
+	/// if (out of bounds)
 	///		return
 	/// 
 	/// if (depth test failed)
@@ -48,10 +45,9 @@ static void __HCTProcessAndDrawPixel(
 	/// setup pixelCtx
 	/// setup pixel
 	/// 
-	/// if (pixelShader != NULL)
-	///		process pixel with shader
-	///		if (should discard pixel)
-	///			return
+	///	process pixel with shader
+	///	if (should discard pixel)
+	///		return
 	/// 
 	/// if (pixelShader has changed screencoord)
 	///		if (point is out of bounds again)
@@ -62,9 +58,9 @@ static void __HCTProcessAndDrawPixel(
 	/// get below color
 	/// generate blended color
 	/// set frameBuffer pixel to blended color
-
-	if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width - 1,  screenCoord.x) == FALSE ||
-	    __HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
+	 
+	if (__HCTIsInRange(0, drawInfo->frameBuffer->width - 1, screenCoord.x) == FALSE ||
+		__HCTIsInRange(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
 
 	if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 		drawInfo->shader->depthTest == TRUE) return;
@@ -90,26 +86,19 @@ static void __HCTProcessAndDrawPixel(
 		FALSE
 	);
 
-	if (drawInfo->shader->pixelShader != NULL) {
+	BOOL keepPixel = drawInfo->shader->pixelShader(
+		pixCtx,
+		&pixel,
+		drawInfo->shaderInput
+	);
 
-		BOOL keepPixel = drawInfo->shader->pixelShader(
-			pixCtx,
-			&pixel,
-			drawInfo->shaderInput
-		);
-
-		if (keepPixel == FALSE)
-			return;
-
-	}
-
-	if (pixel.color.a == 0)
+	if (keepPixel == FALSE || pixel.color.a == 0)
 		return;
 
-	if (((screenCoord.x ^ pixel.screenCoord.x) | (screenCoord.y ^ pixel.screenCoord.y)) != 0) {
+	if ((screenCoord.x != pixel.screenCoord.x) || (screenCoord.y != pixel.screenCoord.y)) {
 
-		if (__HCTIsInRangeI(0, drawInfo->frameBuffer->width - 1, screenCoord.x) == FALSE ||
-			__HCTIsInRangeI(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
+		if (__HCTIsInRange(0, drawInfo->frameBuffer->width - 1, pixel.screenCoord.x) == FALSE ||
+			__HCTIsInRange(0, drawInfo->frameBuffer->height - 1, pixel.screenCoord.y) == FALSE) return;
 
 		if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 			drawInfo->shader->depthTest == TRUE) return;
