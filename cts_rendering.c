@@ -86,7 +86,7 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	obj->gDataSizeBytes		= gDataSizeBytes;
 	obj->mesh				= mesh;
 	obj->texture			= texture;
-	obj->outlineColor		= CTColorCreate(0, 0, 0, 255);
+	obj->outlineColor		= CTColorCreate(0, 0, 0, 0);
 	obj->outlineSizePixels	= 1;
 	obj->subShader			= subShader;
 	obj->alpha				= 255;
@@ -442,7 +442,7 @@ static BOOL __HCTRenderThreadPixShader(
 	default:
 
 		if (data->object->texture == NULL) {
-			pixColor = CTColorCreate(255, 255, 255, 255);
+			*(PDWORD)&pixColor = (DWORD)0;
 			
 		} else {
 			pixColor = CTSSample(

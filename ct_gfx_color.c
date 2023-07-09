@@ -9,7 +9,11 @@
 #include "ct_gfx.h"
 
 static __forceinline INT __HCTClampColorChannel(INT c) {
-	return max(0, min(c, 255));
+	if (c < 0)
+		return 0;
+	if (c > 255)
+		return 255;
+	return c;
 }
 
 CTCALL	CTColor			CTColorCreate(INT r, INT g, INT b, INT a) {

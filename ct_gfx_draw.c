@@ -68,7 +68,7 @@ static inline void __HCTProcessAndDrawPixel(
 
 	CTPixel pixel = {
 		.screenCoord	= screenCoord,
-		.color			= CTColorCreate(0, 0, 0, 0)
+		.color			= { 0, 0, 0, 0 }
 	};
 	
 	CTColor belowColor;
