@@ -20,7 +20,7 @@
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_LOGGING_SLEEP_INTERVAL_MSECS		250
+#define CT_LOGGING_SLEEP_INTERVAL_MSECS		512
 #define CT_LOGGING_MAX_WRITE_SIZE			512
 DWORD __stdcall __CTLoggingThreadProc(PVOID input);
 

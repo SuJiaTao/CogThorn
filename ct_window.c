@@ -95,19 +95,13 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 		PCTFB frameBuffer = ctwin->frameBuffer;
 
 		BITMAP rbBitmap;
-		rbBitmap.bmType = 0;
-		rbBitmap.bmWidth = frameBuffer->width;
-		rbBitmap.bmHeight = frameBuffer->height;
-		rbBitmap.bmWidthBytes = frameBuffer->width * sizeof(CTColor);
-		rbBitmap.bmPlanes = 1;
-		rbBitmap.bmBitsPixel = 32;
-
-		const SIZE_T FB_COLOR_BYTES_TOTAL 
-			= frameBuffer->width * frameBuffer->height * sizeof(CTColor);
-		PBYTE frameBufferColorCopy = CTAlloc(FB_COLOR_BYTES_TOTAL);
-		__movsd(frameBufferColorCopy, frameBuffer->color, FB_COLOR_BYTES_TOTAL >> 2);
-
-		rbBitmap.bmBits = frameBufferColorCopy;
+		rbBitmap.bmType			= 0;
+		rbBitmap.bmWidth		= frameBuffer->width;
+		rbBitmap.bmHeight		= frameBuffer->height;
+		rbBitmap.bmWidthBytes	= frameBuffer->width * sizeof(CTColor);
+		rbBitmap.bmPlanes		= 1;
+		rbBitmap.bmBitsPixel	= 32;
+		rbBitmap.bmBits			= frameBuffer->color;
 
 		HBITMAP hBitMap = CreateBitmapIndirect(&rbBitmap);
 
@@ -164,8 +158,6 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 			.right = winWidth
 		};
 
-		CTFrameBufferUnlock(ctwin->frameBuffer);
-
 		FillRect(paintDC, &topBorder, borderBrush);
 		FillRect(paintDC, &bottomBorder, borderBrush);
 		FillRect(paintDC, &leftBorder, borderBrush);
@@ -183,14 +175,14 @@ static LRESULT CALLBACK __HCTWindowProc(HWND window, UINT message, WPARAM wParam
 			blendFunc
 		);
 
+		CTFrameBufferUnlock(ctwin->frameBuffer);
+
 		DeleteObject(borderBrush);
 
 		DeleteObject(hBitMap);
 		DeleteObject(bitmapDC);
 
 		EndPaint(ctwin->hwnd, &paintObj);
-
-		CTFree(frameBufferColorCopy);
 
 		break;
 	}

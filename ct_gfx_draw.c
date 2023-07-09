@@ -27,7 +27,7 @@ static __forceinline BOOL __HCTIsInRange(INT low, INT high, INT testVal) {
 	return (low <= testVal && high >= testVal);
 }
 
-static void __HCTProcessAndDrawPixel(
+static inline void __HCTProcessAndDrawPixel(
 	P__CTDrawInfo	drawInfo, 
 	UINT32			pixID, 
 	CTPoint			screenCoord, 
@@ -35,9 +35,6 @@ static void __HCTProcessAndDrawPixel(
 ) {
 
 	/// SUMMARY:
-	/// 
-	/// if (out of bounds)
-	///		return
 	/// 
 	/// if (depth test failed)
 	///		return
@@ -59,9 +56,6 @@ static void __HCTProcessAndDrawPixel(
 	/// generate blended color
 	/// set frameBuffer pixel to blended color
 	 
-	if (__HCTIsInRange(0, drawInfo->frameBuffer->width - 1, screenCoord.x) == FALSE ||
-		__HCTIsInRange(0, drawInfo->frameBuffer->height - 1, screenCoord.y) == FALSE) return;
-
 	if (CTFrameBufferDepthTestEx(drawInfo->frameBuffer, screenCoord, drawInfo->depth, FALSE) == FALSE &&
 		drawInfo->shader->depthTest == TRUE) return;
 
