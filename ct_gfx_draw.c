@@ -377,7 +377,7 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	v1 = _mm_rcp_ss(v1);		// v1[0] is now 1/v1[0]
 	v3 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 0, 0)); // v3 is now ALL 1/v1[0] (the RCP denominator)
 
-	const FLOAT invDenom = _mm_cvtss_f32(v1);
+	const FLOAT invDenom = _mm_cvtss_f32(v3);
 
 	v1 = _mm_set_ps(p2.y, p3.x, p3.y, p1.x);
 	v2 = _mm_set_ps(p3.y, p2.x, p1.y, p3.x);
@@ -391,6 +391,9 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 								// v1[1] is now (U * dv3x) + (V * dv3y) which is numerator2
 	v3 = _mm_mul_ps(v1, v3);	// v3[0] is now numerator1 / denominator
 								// v3[1] is now numerator2 / denominator
+
+	FLOAT testWeight2 = _mm_cvtss_f32(_mm_shuffle_ps(v3, v3, _MM_SHUFFLE(0, 0, 0, 1)));
+	FLOAT testWeight1 = _mm_cvtss_f32(_mm_shuffle_ps(v3, v3, _MM_SHUFFLE(0, 0, 0, 0)));
 	
 	const FLOAT dv3x = vert.x - p3.x;
 	const FLOAT dv3y = vert.y - p3.y;
@@ -398,6 +401,13 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	const FLOAT weight1 = ((p2.y - p3.y) * (dv3x) + (p3.x - p2.x) * (dv3y)) * invDenom;
 	const FLOAT weight2 = ((p3.y - p1.y) * (dv3x) + (p1.x - p3.x) * (dv3y)) * invDenom;
 	const FLOAT weight3 = 1 - weight1 - weight2;
+
+	if (testWeight1 != weight1) {
+		printf("tw1: %f %f\n", testWeight1, weight1);
+	}
+	if (testWeight2 != weight2) {
+		printf("tw2: %f %f\n", testWeight2, weight2);
+	}
 
 	CTVect UV = {
 		.x = verts[0].UV.x * weight1 + verts[1].UV.x * weight2 + verts[2].UV.x * weight3,
