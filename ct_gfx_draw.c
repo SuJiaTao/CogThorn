@@ -9,6 +9,7 @@
 #include "ct_gfx.h"
 
 #include <intrin.h>
+#include <stdio.h>
 
 typedef struct __CTDrawInfo {
 	UINT32		drawMethod;
@@ -364,9 +365,19 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	CTVect p2 = verts[1].vertex;
 	CTVect p3 = verts[2].vertex;
 
-	const FLOAT invDenom =
-		__HCTFloatRcp((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+	__m128 v1, v2, v3;
+	v1 = _mm_set_ps(p2.y, p1.x, p3.x, p1.y);
+	v2 = _mm_set_ps(p3.y, p3.x, p2.x, p3.y);
+	// denominator should be (A*B) + (C*D)
+	v1 = _mm_sub_ps(v1, v2);								// v1 now holds (A, B, C, D)
+	v2 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 2, 0));	// v2 now holds (A, C, A, A)
+	v1 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 3, 1));	// v1 now holds (B, D, A, A)
+	v1 = _mm_mul_ps(v1, v2);	// v1 now holds (AB, CD, AA, AA)
+	v1 = _mm_hadd_ps(v1, v1);	// v1[0] now holds AB+CD
+	v1 = _mm_rcp_ss(v1);		// v1[0] is now 1/v1[0]
 
+	const FLOAT invDenom = _mm_cvtss_f32(v1);
+	
 	const FLOAT dv3x = vert.x - p3.x;
 	const FLOAT dv3y = vert.y - p3.y;
 
