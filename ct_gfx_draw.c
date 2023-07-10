@@ -9,6 +9,7 @@
 #include "ct_gfx.h"
 
 #include <intrin.h>
+#include <immintrin.h>
 #include <stdio.h>
 
 typedef struct __CTDrawInfo {
@@ -365,54 +366,16 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	CTVect p2 = verts[1].vertex;
 	CTVect p3 = verts[2].vertex;
 
-	__m128 v1, v2, v3;
-	v1 = _mm_set_ps(p2.y, p1.x, p3.x, p1.y);
-	v2 = _mm_set_ps(p3.y, p3.x, p2.x, p3.y);
-	// denominator should be (A*B) + (C*D)
-	v1 = _mm_sub_ps(v1, v2);								// v1 now holds (A, B, C, D)
-	v2 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 2, 0));	// v2 now holds (A, C, A, A)
-	v1 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 3, 1));	// v1 now holds (B, D, A, A)
-	v1 = _mm_mul_ps(v1, v2);	// v1 now holds (AB, CD, AA, AA)
-	v1 = _mm_hadd_ps(v1, v1);	// v1[0] now holds AB+CD
-	v1 = _mm_rcp_ss(v1);		// v1[0] is now 1/v1[0]
-	v3 = _mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 0, 0)); // v3 is now ALL 1/v1[0] (the RCP denominator)
-
-	const FLOAT invDenom = _mm_cvtss_f32(v3);
-
-	v1 = _mm_set_ps(p2.y, p3.x, p3.y, p1.x);
-	v2 = _mm_set_ps(p3.y, p2.x, p1.y, p3.x);
-	// numerator1 should be (S * dv3x) + (T * dv3y)
-	// numerator2 should be (U * dv3x) + (V * dv3y)
-	v1 = _mm_sub_ps(v2, v1);	// v1 is now (S, T, U, V)
-	v2 = _mm_set_ps(vert.x, p3.x, vert.y, p3.y);
-	v2 = _mm_hsub_ps(v2, v2);	// v2 is now (dv3x, dv3y, dv3x, dv3y)
-	v1 = _mm_mul_ps(v1, v2);	// v1 is now (S * dv3x, T * dv3y, U * dv3x, V * dv3y)
-	v1 = _mm_hadd_ps(v1, v1);	// v1[0] is now (S * dv3x) + (T * dv3y) which is numerator1
-								// v1[1] is now (U * dv3x) + (V * dv3y) which is numerator2
-	v3 = _mm_mul_ps(v1, v3);	// v3[0] is now numerator1 / denominator (w1)
-								// v3[1] is now numerator2 / denominator (w2)
-
-	// we need w3 which is 1.0f - w1 - w2 or 1.0f - (w1 + w2)
-	v1 = _mm_hadd_ps(v3, v3);	// v1[0] is now (w1 + w2)
-	v2 = _mm_set_ps1(1.0f);		// v2 is now all 1.0fs
-	v2 = _mm_sub_ps(v2, v1);	// v2[0] is now w3
-	v3 = _mm_shuffle_ps(v3, v2, _MM_SHUFFLE(2, 3, 0, 0));	// v3 is now (w1, w2, w3)
-
-	v1 = _mm_set_ps(verts[0].UV.x, verts[1].UV.x, verts[2].UV.x, 0.0f);
-	v2 = _mm_set_ps(verts[0].UV.y, verts[1].UV.y, verts[2].UV.y, 0.0f);
-	//v3 = _mm_set_ps(weight1, weight2, weight3, 0.0f);
-
-	v1 = _mm_mul_ps(v1, v3);
-	v2 = _mm_mul_ps(v2, v3);
-
-	v1 = _mm_hadd_ps(v1, v1);
-	v1 = _mm_hadd_ps(v1, v1);
-	v2 = _mm_hadd_ps(v2, v2);
-	v2 = _mm_hadd_ps(v2, v2);
+	FLOAT invDenom = __HCTFloatRcp((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+	FLOAT dv3x = vert.x - p3.x;
+	FLOAT dv3y = vert.y - p3.y;
+	FLOAT weight1 = ((p2.y - p3.y) * (dv3x)+(p3.x - p2.x) * (dv3y)) * invDenom;
+	FLOAT weight2 = ((p3.y - p1.y) * (dv3x)+(p1.x - p3.x) * (dv3y)) * invDenom;
+	FLOAT weight3 = 1 - weight1 - weight2;
 
 	CTVect UV = {
-		.x = _mm_cvtss_f32(_mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 0, 0))),
-		.y = _mm_cvtss_f32(_mm_shuffle_ps(v2, v2, _MM_SHUFFLE(0, 0, 0, 0)))
+		.x = verts[0].UV.x * weight1 + verts[1].UV.x * weight2 + verts[2].UV.x * weight3,
+		.y = verts[0].UV.y * weight1 + verts[1].UV.y * weight2 + verts[2].UV.y * weight3
 	};
 
 	return UV;
