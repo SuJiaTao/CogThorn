@@ -51,7 +51,6 @@ CTCALL	BOOL	CogThornInit(void) {
 		sizeof(CTGFXDrawTask),
 		CT_GFX_DRAW_TASK_LIST_NODE_SIZE
 	);
-	InitializeSRWLock(&__ctdata.gfx.threadLock);
 	for (UINT32 i = 0; i < CT_GFX_THREADCOUNT; i++) {
 		__ctdata.gfx.threads[i] = CreateThread(
 			NULL,

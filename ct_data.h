@@ -38,7 +38,6 @@ struct {
 		PCTDynList	taskList;
 		HANDLE		allTasksCompleteEvent;
 		HANDLE		threadTerminateEvent;
-		SRWLOCK		threadLock;
 	} gfx;
 
 	struct {

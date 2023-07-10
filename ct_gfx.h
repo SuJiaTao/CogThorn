@@ -256,10 +256,11 @@ __CTSSampleComplete:
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct CTGFXDrawTask {
-	UINT32	y;
-	UINT32	startX;
-	UINT32	endX;
-	PVOID	drawInfo;
+	PCTPrimitive	prims;
+	UINT32			drawY;
+	UINT32			startX;
+	UINT32			endX;
+	PVOID			drawInfo;
 } CTGFXDrawTask, *PCTGFXDrawTask;
 
 #define CT_GFX_THREADCOUNT				4

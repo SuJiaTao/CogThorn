@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include "ct_gfx.h"
+#include "ct_data.h"
 
 #include <intrin.h>
 #include <immintrin.h>
@@ -491,6 +492,8 @@ static UINT32 __HCTDrawTriangleBottom(
 
 	UINT32 pixID = startPixID;
 
+	CTDynListLock(__ctdata.gfx.taskList);
+
 	for (INT32 drawY = DRAW_Y_START; drawY <= DRAW_Y_END; drawY++) {
 
 		const FLOAT Y_DISTANCE_WALKED =
@@ -510,30 +513,22 @@ static UINT32 __HCTDrawTriangleBottom(
 				drawInfo->frameBuffer->width - 1
 			);
 
-		for (INT32 drawX = DRAW_X_START; drawX <= DRAW_X_END; drawX++) {
-
-			CTVect UV =
-				__HCTInterpolateUV(
-					oldPrims,
-					drawX,
-					drawY
-				);
-
-			__HCTProcessAndDrawPixel(
-				drawInfo,
-				pixID,
-				CTPointCreate(
-					drawX,
-					drawY
-				),
-				UV
-			);
-
-			pixID++;
-
-		}
+		PCTGFXDrawTask gTask = CTDynListAdd(__ctdata.gfx.taskList);
+		gTask->drawInfo = drawInfo;
+		gTask->drawY	= drawY;
+		gTask->startX	= DRAW_X_START;
+		gTask->endX		= DRAW_X_END;
+		gTask->prims	= oldPrims;
 
 	}
+
+	ResetEvent(__ctdata.gfx.allTasksCompleteEvent);
+
+	CTDynListUnlock(__ctdata.gfx.taskList);
+
+	WaitForSingleObject(__ctdata.gfx.allTasksCompleteEvent, INFINITE);
+
+	CTDynListClean(__ctdata.gfx.taskList);
 
 	return pixID;
 }
@@ -789,4 +784,57 @@ DrawFuncFailure:
 	CTGFXFree(shaderInputCopy);
 	CTGFXFree(processedPrimList);
 	return FALSE;
+}
+
+DWORD __stdcall __CTDrawThreadProc(PVOID input) {
+	
+	printf("gfxThread %p started...\n", GetCurrentThread());
+
+	while (TRUE) {
+
+		if (WaitForSingleObject(__ctdata.gfx.threadTerminateEvent, 0) == WAIT_OBJECT_0) {
+			printf("gfxThread %p leave...\n", GetCurrentThread());
+			ExitThread(0);
+		}
+
+		CTDynListLock(__ctdata.gfx.taskList);
+
+		PCTIterator gTaskIter	= CTIteratorCreate(__ctdata.gfx.taskList);
+		PCTGFXDrawTask pgTask	= CTIteratorIterate(gTaskIter);
+
+		if (pgTask == NULL) {
+			SetEvent(__ctdata.gfx.allTasksCompleteEvent);
+			CTDynListUnlock(__ctdata.gfx.taskList);
+			CTIteratorDestroy(&gTaskIter);
+			continue;
+		}
+
+		CTGFXDrawTask  gTask	= *pgTask;
+		CTDynListRemove(__ctdata.gfx.taskList, pgTask);
+		CTIteratorDestroy(&gTaskIter);
+
+		CTDynListUnlock(__ctdata.gfx.taskList);
+
+		for (INT32 drawX = gTask.startX; drawX <= gTask.endX; drawX++) {
+
+			UINT32 pixID = drawX + (gTask.drawY * ((P__CTDrawInfo)gTask.drawInfo)->frameBuffer->width);
+
+			CTVect UV =
+				__HCTInterpolateUV(
+					gTask.prims,
+					drawX,
+					gTask.drawY
+				);
+
+			__HCTProcessAndDrawPixel(
+				gTask.drawInfo,
+				pixID,
+				CTPointCreate(
+					drawX,
+					gTask.drawY
+				),
+				UV
+			);
+		}
+	}
 }
