@@ -389,16 +389,30 @@ static CTVect __HCTInterpolateUV(PCTPrimitive verts, INT32 px, INT32 py) {
 	v1 = _mm_mul_ps(v1, v2);	// v1 is now (S * dv3x, T * dv3y, U * dv3x, V * dv3y)
 	v1 = _mm_hadd_ps(v1, v1);	// v1[0] is now (S * dv3x) + (T * dv3y) which is numerator1
 								// v1[1] is now (U * dv3x) + (V * dv3y) which is numerator2
-	v3 = _mm_mul_ps(v1, v3);	// v3[0] is now numerator1 / denominator
-								// v3[1] is now numerator2 / denominator
+	v3 = _mm_mul_ps(v1, v3);	// v3[0] is now numerator1 / denominator (w1)
+								// v3[1] is now numerator2 / denominator (w2)
 
-	const FLOAT weight1 = _mm_cvtss_f32(_mm_shuffle_ps(v3, v3, _MM_SHUFFLE(0, 0, 0, 0)));
-	const FLOAT weight2 = _mm_cvtss_f32(_mm_shuffle_ps(v3, v3, _MM_SHUFFLE(0, 0, 0, 1)));
-	const FLOAT weight3 = 1 - weight1 - weight2;
+	// we need w3 which is 1.0f - w1 - w2 or 1.0f - (w1 + w2)
+	v1 = _mm_hadd_ps(v3, v3);	// v1[0] is now (w1 + w2)
+	v2 = _mm_set_ps1(1.0f);		// v2 is now all 1.0fs
+	v2 = _mm_sub_ps(v2, v1);	// v2[0] is now w3
+	v3 = _mm_shuffle_ps(v3, v2, _MM_SHUFFLE(2, 3, 0, 0));	// v3 is now (w1, w2, w3)
+
+	v1 = _mm_set_ps(verts[0].UV.x, verts[1].UV.x, verts[2].UV.x, 0.0f);
+	v2 = _mm_set_ps(verts[0].UV.y, verts[1].UV.y, verts[2].UV.y, 0.0f);
+	//v3 = _mm_set_ps(weight1, weight2, weight3, 0.0f);
+
+	v1 = _mm_mul_ps(v1, v3);
+	v2 = _mm_mul_ps(v2, v3);
+
+	v1 = _mm_hadd_ps(v1, v1);
+	v1 = _mm_hadd_ps(v1, v1);
+	v2 = _mm_hadd_ps(v2, v2);
+	v2 = _mm_hadd_ps(v2, v2);
 
 	CTVect UV = {
-		.x = verts[0].UV.x * weight1 + verts[1].UV.x * weight2 + verts[2].UV.x * weight3,
-		.y = verts[0].UV.y * weight1 + verts[1].UV.y * weight2 + verts[2].UV.y * weight3,
+		.x = _mm_cvtss_f32(_mm_shuffle_ps(v1, v1, _MM_SHUFFLE(0, 0, 0, 0))),
+		.y = _mm_cvtss_f32(_mm_shuffle_ps(v2, v2, _MM_SHUFFLE(0, 0, 0, 0)))
 	};
 
 	return UV;
