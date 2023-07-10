@@ -13,6 +13,7 @@
 #include "ct_gfx.h"
 #include "ct_logging.h"
 #include "ct_thread.h"
+#include "cts_rendering.h"
 
 CTCALL	BOOL	CogThornInit(void);
 CTCALL	BOOL	CogThornTerminate(void);
@@ -53,6 +54,7 @@ struct {
 			PCTDynList		cameraList;
 			PCTDynList		surfaceList;
 			PCTShader		shader;
+			PCTSubShader	defaultSubShader;
 		} rendering;
 
 	} sys;

@@ -49,6 +49,7 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	BOOL		disableGAlpha,
 	BOOL		disableGOutline
 );
+CTCALL	PCTSubShader	CTSubShaderDefault(void);
 #define CTSubShaderCreate(prim, pix) \
 	CTSubShaderCreateEx(prim, pix, FALSE, FALSE, FALSE, FALSE)
 CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader);

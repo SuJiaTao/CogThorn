@@ -8,7 +8,7 @@
 
 #include "ct_gfx.h"
 
-static __forceinline INT __HCTClampColorChannel(INT c) {
+static __forceinline BYTE __HCTClampColorChannel(BYTE c) {
 	if (c < 0)
 		return 0;
 	if (c > 255)

@@ -19,6 +19,14 @@ static __forceinline void __HCTCallObjectGProc(PCTGO obj, UINT32 reason, PVOID i
 	);
 }
 
+static void __HCTDefaultSubShaderPrim(CTPrimCtx ctx, PCTPrimitive prim, PVOID object) {
+	return;
+}
+
+static BOOL __HCTDefaultSubShaderPix(CTPixCtx ctx, PCTPixel pixel, PVOID object) {
+	return TRUE;
+}
+
 CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	PCTSUBSPRIM primShader,
 	PCTSUBSPIX	pixShader,
@@ -26,6 +34,14 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	BOOL		disableGAlpha,
 	BOOL		disableGOutline
 ) {
+
+	if (primShader == NULL) {
+		primShader = __HCTDefaultSubShaderPrim;
+	}
+	if (pixShader == NULL) {
+		pixShader = __HCTDefaultSubShaderPix;
+	}
+
 	PCTSubShader shader = CTGFXAlloc(sizeof(*shader));
 	shader->subPrimShader		= primShader;
 	shader->subPixShader		= pixShader;
@@ -34,6 +50,11 @@ CTCALL	PCTSubShader	CTSubShaderCreateEx(
 	shader->disableGOutline		= disableGOutline;
 
 	return shader;
+
+}
+
+CTCALL	PCTSubShader	CTSubShaderDefault(void) {
+	return __ctdata.sys.rendering.defaultSubShader;
 }
 
 CTCALL	BOOL			CTSubShaderDestroy(PCTSubShader* pSubShader) {
@@ -72,6 +93,11 @@ CTCALL	PCTGO	CTGraphicsObjectCreate(
 	
 	if (gProc == NULL) {
 		CTErrorSetBadObject("CTGraphicsObjectCreate failed: gProc was NULL");
+		return NULL;
+	}
+
+	if (subShader == NULL) {
+		CTErrorSetBadObject("CTGraphicsObjectCreate failed: subShader was NULL");
 		return NULL;
 	}
 
@@ -364,19 +390,13 @@ static void __HCTRenderThreadPrimShader(
 
 	BOOL applyTransform = TRUE;
 
-	if (data->object->subShader != NULL) {
-		applyTransform = !(data->object->subShader->disableGTransform);
-	}
+	applyTransform = !(data->object->subShader->disableGTransform);
 
-	if (data->object->subShader != NULL) {
-		if (data->object->subShader->subPrimShader != NULL) {
-			data->object->subShader->subPrimShader(
-				ctx,
-				prim,
-				data->object
-			);
-		}
-	}
+	data->object->subShader->subPrimShader(
+		ctx,
+		prim,
+		data->object
+	);
 
 	if (applyTransform == TRUE) {
 		CTMatrix tform = CTMatrixTransform(
@@ -420,13 +440,9 @@ static BOOL __HCTRenderThreadPixShader(
 	PCTPixel			pixel,
 	P__CTRTShaderData	data
 ) {
-	BOOL applyOutline	= TRUE;
-	BOOL applyAlpha		= TRUE;
-	
-	if (data->object->subShader != NULL) {
-		applyOutline	= !(data->object->subShader->disableGOutline);
-		applyAlpha		= !(data->object->subShader->disableGAlpha);
-	}
+
+	BOOL applyOutline	= !(data->object->subShader->disableGOutline);
+	BOOL applyAlpha		= !(data->object->subShader->disableGAlpha);
 
 	CTColor pixColor;
 
@@ -462,15 +478,11 @@ static BOOL __HCTRenderThreadPixShader(
 	pixel->color = pixColor;
 
 	BOOL keepPixel = TRUE;
-	if (data->object->subShader != NULL) {
-		if (data->object->subShader->subPixShader != NULL) {
-			keepPixel = data->object->subShader->subPixShader(
-				ctx,
-				pixel,
-				data->object
-			);
-		}
-	}
+	keepPixel = data->object->subShader->subPixShader(
+		ctx,
+		pixel,
+		data->object
+	);
 
 	return keepPixel;
 }
@@ -625,6 +637,10 @@ void __CTRenderThreadProc(
 			CTDynListClean(__ctdata.sys.rendering.objList);
 			CTDynListClean(__ctdata.sys.rendering.cameraList);
 			CTDynListClean(__ctdata.sys.rendering.surfaceList);
+			__ctdata.sys.rendering.defaultSubShader = CTSubShaderCreate(
+				__HCTDefaultSubShaderPrim,
+				__HCTDefaultSubShaderPix
+			);
 
 			UINT32 objCountAfter = __ctdata.sys.rendering.objList->elementsUsedCount;
 			UINT32 camCountAfter = __ctdata.sys.rendering.cameraList->elementsUsedCount;
@@ -762,6 +778,7 @@ void __CTRenderThreadProc(
 		CTDynListDestroy(&__ctdata.sys.rendering.cameraList);
 		CTDynListDestroy(&__ctdata.sys.rendering.surfaceList);
 		CTLogStreamDestroy(&__ctdata.sys.rendering.logStream);
+		CTSubShaderDestroy(&__ctdata.sys.rendering.defaultSubShader);
 
 		break;
 
