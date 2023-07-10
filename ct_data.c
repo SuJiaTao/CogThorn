@@ -35,6 +35,7 @@ CTCALL	BOOL	CogThornInit(void) {
 
 	ZeroMemory(&__ctdata.gfx, sizeof(__ctdata.gfx));
 	__ctdata.gfx.gfxHeap	= HeapCreate(0, 0, 0);
+	
 	SetProcessDPIAware();
 
 	//////////////////////////////////////////////////////////////////////////////

@@ -34,6 +34,12 @@ struct {
 
 	struct {
 		HANDLE		gfxHeap;
+		struct {
+			HANDLE	thread;
+			HANDLE	awaitingTask;
+			HANDLE	taskCompleted;
+		} threadStates[CT_GFX_THREADCOUNT];
+		SRWLOCK		threadLock;
 	} gfx;
 
 	struct {
