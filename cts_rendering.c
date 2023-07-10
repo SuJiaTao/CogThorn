@@ -221,6 +221,21 @@ CTCALL	PCTSurface	CTSurfaceCreate(
 	return dat.outSurf;
 }
 
+CTCALL	BOOL		CTSurfaceShouldClose(PCTSurface surface) {
+	CTLockEnter(__ctdata.sys.rendering.lock);
+
+	if (surface == NULL) {
+		CTErrorSetParamValue("CTSurfaceShouldClose failed: surface was NULL");
+		CTLockLeave(__ctdata.sys.rendering.lock);
+		return FALSE;
+	}
+
+	BOOL shouldClose = CTWindowShouldClose(surface->window);
+	CTLockLeave(__ctdata.sys.rendering.lock);
+	
+	return shouldClose;
+}
+
 CTCALL	BOOL		CTSurfaceDestroy(PCTSurface* pSurface) {
 
 	CTLockEnter(__ctdata.sys.rendering.lock);
@@ -743,6 +758,7 @@ void __CTRenderThreadProc(
 		while ((surface = CTIteratorIterate(surfIter)) != NULL) {
 
 			if (surface->destroySignal == TRUE) {
+				CTFrameBufferDestroy(&surface->frameBuffer);
 				CTWindowDestroy(&surface->window);
 				CTDynListRemove(__ctdata.sys.rendering.surfaceList, surface);
 				continue;

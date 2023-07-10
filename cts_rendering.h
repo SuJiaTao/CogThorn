@@ -127,6 +127,7 @@ CTCALL	PCTSurface	CTSurfaceCreate(
 	UINT32	resX,
 	UINT32	resY
 );
+CTCALL	BOOL		CTSurfaceShouldClose(PCTSurface surface);
 CTCALL	BOOL		CTSurfaceDestroy(PCTSurface* pSurface);
 
 //////////////////////////////////////////////////////////////////////////////
