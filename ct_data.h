@@ -34,11 +34,10 @@ struct {
 
 	struct {
 		HANDLE		gfxHeap;
-		struct {
-			HANDLE	thread;
-			HANDLE	awaitingTask;
-			HANDLE	taskCompleted;
-		} threadStates[CT_GFX_THREADCOUNT];
+		HANDLE		threads[CT_GFX_THREADCOUNT];
+		PCTDynList	taskList;
+		HANDLE		allTasksCompleteEvent;
+		HANDLE		threadTerminateEvent;
 		SRWLOCK		threadLock;
 	} gfx;
 

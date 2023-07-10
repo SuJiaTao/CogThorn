@@ -34,8 +34,35 @@ CTCALL	BOOL	CogThornInit(void) {
 	//////////////////////////////////////////////////////////////////////////////
 
 	ZeroMemory(&__ctdata.gfx, sizeof(__ctdata.gfx));
-	__ctdata.gfx.gfxHeap	= HeapCreate(0, 0, 0);
-	
+	__ctdata.gfx.gfxHeap				= HeapCreate(0, 0, 0);
+	__ctdata.gfx.allTasksCompleteEvent  = CreateEventA(
+		NULL,
+		TRUE,
+		FALSE,
+		NULL
+	);
+	__ctdata.gfx.threadTerminateEvent = CreateEventA(
+		NULL,
+		TRUE,
+		FALSE,
+		NULL
+	);
+	__ctdata.gfx.taskList = CTDynListCreate(
+		sizeof(CTGFXDrawTask),
+		CT_GFX_DRAW_TASK_LIST_NODE_SIZE
+	);
+	InitializeSRWLock(&__ctdata.gfx.threadLock);
+	for (UINT32 i = 0; i < CT_GFX_THREADCOUNT; i++) {
+		__ctdata.gfx.threads[i] = CreateThread(
+			NULL,
+			CT_GFX_THREAD_STACKSIZE,
+			__CTDrawThreadProc,
+			NULL,
+			NULL,
+			NULL
+		);
+	}
+
 	SetProcessDPIAware();
 
 	//////////////////////////////////////////////////////////////////////////////

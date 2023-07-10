@@ -255,7 +255,16 @@ __CTSSampleComplete:
 /// 
 //////////////////////////////////////////////////////////////////////////////
 
-#define CT_GFX_THREADCOUNT	4
+typedef struct CTGFXDrawTask {
+	UINT32	y;
+	UINT32	startX;
+	UINT32	endX;
+	PVOID	drawInfo;
+} CTGFXDrawTask, *PCTGFXDrawTask;
+
+#define CT_GFX_THREADCOUNT				4
+#define CT_GFX_DRAW_TASK_LIST_NODE_SIZE	1080
+#define CT_GFX_THREAD_STACKSIZE			10000
 DWORD __stdcall __CTDrawThreadProc(PVOID input);
 
 #endif
