@@ -38,15 +38,9 @@ CTCALL	CTMatrix	CTMatrixMultiply(CTMatrix m1, CTMatrix m2) {
 
 	for (int x = 0; x < 3; x++) {
 		for (int y = 0; y < 3; y++) {
-
-			__m128 va, vb, vr;
-			va  = _mm_set_ps(m2.vals[0][y], m2.vals[1][y], m2.vals[2][y], 0.0f);
-			vb  = _mm_set_ps(m1.vals[x][0], m1.vals[x][1], m1.vals[x][2], 0.0f);
-			vr  = _mm_mul_ps(va, vb);
-			vr = _mm_hadd_ps(vr, vr);
-			vr = _mm_hadd_ps(vr, vr);
-			_mm_store_ss(&rMat.vals[x][y], vr);
-
+			rMat.vals[x][y] += m1.vals[x][0] * m2.vals[0][y];
+			rMat.vals[x][y] += m1.vals[x][1] * m2.vals[1][y];
+			rMat.vals[x][y] += m1.vals[x][2] * m2.vals[2][y];
 		}
 	}
 
